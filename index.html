@@ -1521,8 +1521,20 @@ renderGenres();
 
   // ─── INIT ───
   initQualitySelector();
-  resize3D();
-  loop();
+
+  // Resize quand la section entre dans le viewport (évite canvas 0x0 au chargement)
+  var started = false;
+  function startOnce(){
+    if(started) return;
+    started = true;
+    resize3D();
+    loop();
+  }
+  var obs = new IntersectionObserver(function(entries){
+    if(entries[0].isIntersecting) startOnce();
+  }, {threshold:0.1});
+  var section = document.getElementById('lab3d');
+  if(section) obs.observe(section); else startOnce();
 
 })();
 </script>
