@@ -424,6 +424,7 @@ footer strong{color:var(--txt)}
   <div id="lab-qs" style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:20px;max-width:900px;margin-left:auto;margin-right:auto"></div>
   <div id="lab3d-wrap" style="position:relative;max-width:900px;margin:0 auto;border-radius:16px;overflow:hidden;background:#04080F;border:1px solid rgba(255,255,255,0.08);box-shadow:0 0 60px rgba(139,92,246,0.15)">
     <canvas id="lab3d-canvas" style="display:block;width:100%"></canvas>
+    <canvas id="lab3d-labels" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none"></canvas>
     <div style="position:absolute;top:12px;right:12px;display:flex;gap:6px">
       <button class="lab-view-btn" onclick="setLabView('top')">⬆ Sup</button>
       <button class="lab-view-btn" onclick="setLabView('lat')">↔ Lat</button>
@@ -1351,15 +1352,49 @@ renderGenres();
   const saeRim = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.055, 6, 22), M(0xF472B6, 0.75));
   saeRim.position.y = 1.55; LG.add(saeRim);
 
+  // ─── ÉPIGLOTTE ───
+  // Feuille cartilagineuse, base fixée à l'angle interne THY, apex vers l'arrière et le haut
+  const epiMat = M(0xF97316, 0.65);
+  const epiBody = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.55, 0.25, 0.08, 8),
+    epiMat
+  );
+  epiBody.position.set(0, 1.75, 0.25);
+  epiBody.rotation.x = -0.6; // incliné vers l'arrière
+  LG.add(epiBody);
+  // Tige de l'épiglotte fixée au THY
+  const epiStem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.04, 0.04, 0.55, 6),
+    M(0xFB923C, 0.5)
+  );
+  epiStem.position.set(0, 1.38, -0.05);
+  epiStem.rotation.x = 0.4;
+  LG.add(epiStem);
+
+  // ─── OS HYOÏDE ───
+  // U horizontal, seul os sans articulation directe — ancrage supérieur
+  const hyoMat = M(0x6EE7B7, 0.55);
+  const hyoArc = new THREE.Mesh(
+    new THREE.TorusGeometry(0.62, 0.06, 8, 24, Math.PI * 1.4),
+    hyoMat
+  );
+  hyoArc.position.set(0, 2.45, -0.05);
+  hyoArc.rotation.y = Math.PI * 0.8;
+  scene.add(hyoArc); // attaché à la scène, pas au LG (os fixe, larynx monte/descend dessous)
+
   // ─── QUALITY TARGET STATES ───
+  // États issus du tableau 13×7 complet du PDF Estill (p. 218)
+  // fpvX: 0.55=centrés (Speech seul), 0.88=rétractés (toutes qualités chantées)
+  // saeScale: 1.0=large, 0.38=étroit (Twang/Opéra/Belt)
+  // laryY: 0=centré, -1.2=bas (Sob/Opéra), +0.9=haut (Twang/Belt)
   const STATES = {
     speech:     {thyTilt:0,     crcTilt:0,    vpvThick:1.0,  fpvX:0.55, saeScale:1.0,  laryY:0,    vpvHex:0xF59E0B},
-    falsetto:   {thyTilt:0,     crcTilt:0,    vpvThick:0.22, fpvX:0.55, saeScale:1.0,  laryY:0,    vpvHex:0x8B5CF6},
-    sob:        {thyTilt:-0.42, crcTilt:0,    vpvThick:0.30, fpvX:0.88, saeScale:1.0,  laryY:-1.2, vpvHex:0x22D3EE},
-    twang_nasal:{thyTilt:-0.35, crcTilt:0,    vpvThick:0.30, fpvX:0.88, saeScale:0.37, laryY:0.9,  vpvHex:0xFCD34D},
-    twang_oral: {thyTilt:-0.35, crcTilt:0,    vpvThick:0.30, fpvX:0.88, saeScale:0.37, laryY:0.9,  vpvHex:0xFB923C},
-    opera:      {thyTilt:-0.42, crcTilt:0,    vpvThick:0.38, fpvX:0.88, saeScale:0.40, laryY:-1.2, vpvHex:0xF87171},
-    belt:       {thyTilt:0,     crcTilt:0.44, vpvThick:1.0,  fpvX:0.88, saeScale:0.40, laryY:0.9,  vpvHex:0xFB923C},
+    falsetto:   {thyTilt:0,     crcTilt:0,    vpvThick:0.22, fpvX:0.88, saeScale:1.0,  laryY:0,    vpvHex:0x8B5CF6},
+    sob:        {thyTilt:-0.42, crcTilt:0,    vpvThick:0.28, fpvX:0.88, saeScale:1.0,  laryY:-1.2, vpvHex:0x22D3EE},
+    twang_nasal:{thyTilt:-0.35, crcTilt:0,    vpvThick:0.28, fpvX:0.88, saeScale:0.38, laryY:0.9,  vpvHex:0xFCD34D},
+    twang_oral: {thyTilt:-0.35, crcTilt:0,    vpvThick:0.28, fpvX:0.88, saeScale:0.38, laryY:0.9,  vpvHex:0xFB923C},
+    opera:      {thyTilt:-0.42, crcTilt:0,    vpvThick:0.32, fpvX:0.88, saeScale:0.38, laryY:-1.2, vpvHex:0xF87171},
+    belt:       {thyTilt:0,     crcTilt:0.44, vpvThick:1.0,  fpvX:0.88, saeScale:0.38, laryY:0.9,  vpvHex:0xFB923C},
   };
 
   // Live animated values (lerp sources)
@@ -1439,6 +1474,61 @@ renderGenres();
     lx=e.touches[0].clientX; ly=e.touches[0].clientY;
   },{passive:true});
 
+  // ─── LABELS 2D OVERLAY ───
+  var lblCanvas = document.getElementById('lab3d-labels');
+  var lctx = lblCanvas ? lblCanvas.getContext('2d') : null;
+  // Positions 3D des ancres de labels (world space, sans offset LG)
+  var LABEL_DEFS = [
+    {name:'Hyoïde', pos:new THREE.Vector3(0.7, 2.45, -0.05), col:'#6EE7B7', fixed:true},
+    {name:'Épiglotte', pos:new THREE.Vector3(-0.6, 1.75, 0.25), col:'#F97316', fixed:false},
+    {name:'SAE', pos:new THREE.Vector3(0.85, 1.15, 0), col:'#EC4899', fixed:false},
+    {name:'FPV', pos:new THREE.Vector3(-0.9, 0.38, 0), col:'#10B981', fixed:false},
+    {name:'THY', pos:new THREE.Vector3(-0.7, 0.1, 0), col:'#A855F7', fixed:false},
+    {name:'VPV', pos:new THREE.Vector3(0.5, -0.05, 0), col:'#F59E0B', fixed:false},
+    {name:'Arytén.', pos:new THREE.Vector3(0.4, -0.05, 0.9), col:'#FBBF24', fixed:false},
+    {name:'CRC', pos:new THREE.Vector3(0.85, -1.35, 0), col:'#0EA5E9', fixed:false},
+  ];
+
+  function drawLabels(){
+    if(!lctx || !lblCanvas || !lblCanvas.width) return;
+    var w = lblCanvas.width, h = lblCanvas.height;
+    var dpr = window.devicePixelRatio || 1;
+    lctx.clearRect(0,0,w,h);
+    lctx.font = '700 '+(11*dpr)+'px "Segoe UI",system-ui,sans-serif';
+
+    LABEL_DEFS.forEach(function(lbl){
+      var v = lbl.pos.clone();
+      if(!lbl.fixed) v.y += LG.position.y; // suivi de la hauteur larynx
+      v.project(camera);
+      if(v.z >= 1) return; // derrière la caméra
+      var sx = (v.x * 0.5 + 0.5) * w;
+      var sy = (-v.y * 0.5 + 0.5) * h;
+      if(sx < 0 || sx > w || sy < 0 || sy > h) return;
+
+      var right = sx < w * 0.55;
+      var tx = right ? sx + 9*dpr : sx - 9*dpr;
+
+      // Ligne de rappel
+      lctx.strokeStyle = lbl.col;
+      lctx.globalAlpha = 0.55;
+      lctx.lineWidth = dpr;
+      lctx.beginPath();
+      lctx.moveTo(sx, sy);
+      lctx.lineTo(right ? sx+5*dpr : sx-5*dpr, sy);
+      lctx.stroke();
+
+      // Fond + texte
+      lctx.globalAlpha = 1;
+      var metrics = lctx.measureText(lbl.name);
+      var tw = metrics.width + 6*dpr, th = 14*dpr;
+      lctx.fillStyle = 'rgba(4,8,18,0.75)';
+      lctx.fillRect(right ? tx : tx-tw, sy - th/2, tw, th);
+      lctx.fillStyle = lbl.col;
+      lctx.textAlign = right ? 'left' : 'right';
+      lctx.fillText(lbl.name, right ? tx+3*dpr : tx-3*dpr, sy + 4*dpr);
+    });
+  }
+
   // ─── RESIZE ───
   function resize3D(){
     var wrap=document.getElementById('lab3d-wrap');
@@ -1448,6 +1538,14 @@ renderGenres();
     renderer.setSize(w,h);
     camera.aspect=w/h;
     camera.updateProjectionMatrix();
+    // Sync labels canvas
+    if(lblCanvas){
+      var dpr = window.devicePixelRatio||1;
+      lblCanvas.width  = w * dpr;
+      lblCanvas.height = h * dpr;
+      lblCanvas.style.width  = w+'px';
+      lblCanvas.style.height = h+'px';
+    }
   }
   window.addEventListener('resize', resize3D);
 
@@ -1517,6 +1615,7 @@ renderGenres();
     updateCam();
     applyState(dt);
     renderer.render(scene, camera);
+    drawLabels();
   }
 
   // ─── INIT ───
