@@ -1291,15 +1291,15 @@ renderGenres();
   LG.add(thyG);
   const thyMat = M(0xA855F7, 0.75);
 
-  // Left plate (thin box angled to form V shape)
-  const thyLGeo = new THREE.BoxGeometry(0.09, 1.7, 1.05);
+  // Two lames in V — angle interne ~90° (adulte masculin)
+  const thyLGeo = new THREE.BoxGeometry(0.09, 1.7, 1.1);
   const thyL = new THREE.Mesh(thyLGeo, thyMat);
-  thyL.rotation.y = -0.52;
-  thyL.position.set(-0.45, 0, 0.32);
+  thyL.rotation.y = -0.44;
+  thyL.position.set(-0.42, 0, 0.38);
   thyG.add(thyL);
   const thyR = new THREE.Mesh(thyLGeo, thyMat);
-  thyR.rotation.y = 0.52;
-  thyR.position.set(0.45, 0, 0.32);
+  thyR.rotation.y = 0.44;
+  thyR.position.set(0.42, 0, 0.38);
   thyG.add(thyR);
 
   // Anterior commissure bar
@@ -1329,21 +1329,28 @@ renderGenres();
   const aryR = new THREE.Mesh(aryGeo, aryMat);
   aryR.position.set(0.3, -0.05, 0.72); LG.add(aryR);
 
-  // ─── VPV (true vocal folds) ───
+  // ─── VPV (true vocal folds) — fusiformes ───
+  // Lèvres fusiformes : plus épaisses au milieu, effilées aux extrémités (commissure ant. → processus vocal aryt.)
+  // Cylindre tronconique rotationné sur X pour courir d'avant en arrière (axe Z)
   const vpvMat = M(0xF59E0B, 0.95);
-  const vpvLGeo = new THREE.BoxGeometry(0.85, 0.22, 0.28);
-  const vpvL = new THREE.Mesh(vpvLGeo, vpvMat);
-  vpvL.rotation.y = 0.33; vpvL.position.set(-0.33, -0.05, 0.32); LG.add(vpvL);
-  const vpvR = new THREE.Mesh(vpvLGeo, vpvMat);
-  vpvR.rotation.y = -0.33; vpvR.position.set(0.33, -0.05, 0.32); LG.add(vpvR);
+  const vpvFusoGeo = new THREE.CylinderGeometry(0.065, 0.10, 0.82, 10);
+  const vpvL = new THREE.Mesh(vpvFusoGeo, vpvMat);
+  vpvL.rotation.x = Math.PI/2;  // axe → Z (antéro-postérieur)
+  vpvL.position.set(-0.12, -0.05, 0.35); LG.add(vpvL);
+  const vpvR = new THREE.Mesh(vpvFusoGeo, vpvMat);
+  vpvR.rotation.x = Math.PI/2;
+  vpvR.position.set(0.12, -0.05, 0.35); LG.add(vpvR);
 
-  // ─── FPV (false vocal folds) ───
+  // ─── FPV (faux plis — bandes ventriculaires) ───
+  // Plus larges et plus plats que les VPV, au-dessus d'eux, séparés par les ventricules de Morgagni
   const fpvMat = M(0x10B981, 0.75);
-  const fpvLGeo = new THREE.BoxGeometry(0.85, 0.15, 0.22);
-  const fpvL = new THREE.Mesh(fpvLGeo, fpvMat);
-  fpvL.rotation.y = 0.3; fpvL.position.set(-0.55, 0.38, 0.32); LG.add(fpvL);
-  const fpvR = new THREE.Mesh(fpvLGeo, fpvMat);
-  fpvR.rotation.y = -0.3; fpvR.position.set(0.55, 0.38, 0.32); LG.add(fpvR);
+  const fpvFusoGeo = new THREE.CylinderGeometry(0.075, 0.10, 0.78, 10);
+  const fpvL = new THREE.Mesh(fpvFusoGeo, fpvMat);
+  fpvL.rotation.x = Math.PI/2;
+  fpvL.position.set(-0.55, 0.40, 0.35); LG.add(fpvL);
+  const fpvR = new THREE.Mesh(fpvFusoGeo, fpvMat);
+  fpvR.rotation.x = Math.PI/2;
+  fpvR.position.set(0.55, 0.40, 0.35); LG.add(fpvR);
 
   // ─── SAE (aryepiglottic sphincter) ───
   const saeMat = M(0xEC4899, 0.55);
@@ -1382,23 +1389,53 @@ renderGenres();
   hyoArc.rotation.y = Math.PI * 0.8;
   scene.add(hyoArc); // attaché à la scène, pas au LG (os fixe, larynx monte/descend dessous)
 
+  // ─── TRACHÉE (anneaux cartilagineux) ───
+  const trachMat = M(0x38BDF8, 0.30);
+  for(var ti=0; ti<3; ti++){
+    var tr = new THREE.Mesh(new THREE.TorusGeometry(0.70, 0.055, 6, 24), trachMat);
+    tr.position.y = -1.35 - 0.6 - ti*0.38;
+    scene.add(tr); // fixe (pas dans LG)
+  }
+
+  // ─── LANGUE (corpus — corps de la langue) ───
+  // Grande masse musculaire au-dessus du larynx, animée haute/centrée
+  const langMat = M(0xF472B6, 0.30);
+  const langMesh = new THREE.Mesh(new THREE.SphereGeometry(0.68, 12, 8), langMat);
+  langMesh.scale.set(1.4, 0.6, 1.5);
+  langMesh.position.set(0, 2.9, 0.35);
+  scene.add(langMesh);
+
+  // ─── VOILE DU PALAIS ───
+  // Clapet musculaire qui s'abaisse (centré → ouverture nasale) ou monte (haut → bloque nasale)
+  // Différenciateur unique Twang Nasal (centré) vs Twang Oral (haut)
+  const voileMat = M(0xFDA4AF, 0.45);
+  const voileMesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.55, 0.48, 0.12, 12, 1, false, 0, Math.PI * 1.7),
+    voileMat
+  );
+  voileMesh.position.set(0, 3.25, 0.15);
+  voileMesh.rotation.x = -0.25; // position haut (fermé) par défaut
+  scene.add(voileMesh);
+
   // ─── QUALITY TARGET STATES ───
   // États issus du tableau 13×7 complet du PDF Estill (p. 218)
   // fpvX: 0.55=centrés (Speech seul), 0.88=rétractés (toutes qualités chantées)
   // saeScale: 1.0=large, 0.38=étroit (Twang/Opéra/Belt)
   // laryY: 0=centré, -1.2=bas (Sob/Opéra), +0.9=haut (Twang/Belt)
+  // voileOpen: 0=haut (fermé, bloque naso-pharynx), 1=centré (abaissé → ouverture nasale = Twang Nasal)
+  // langueHigh: 0=centrée, 1=haute (langue relevée vers palais)
   const STATES = {
-    speech:     {thyTilt:0,     crcTilt:0,    vpvThick:1.0,  fpvX:0.55, saeScale:1.0,  laryY:0,    vpvHex:0xF59E0B},
-    falsetto:   {thyTilt:0,     crcTilt:0,    vpvThick:0.22, fpvX:0.88, saeScale:1.0,  laryY:0,    vpvHex:0x8B5CF6},
-    sob:        {thyTilt:-0.42, crcTilt:0,    vpvThick:0.28, fpvX:0.88, saeScale:1.0,  laryY:-1.2, vpvHex:0x22D3EE},
-    twang_nasal:{thyTilt:-0.35, crcTilt:0,    vpvThick:0.28, fpvX:0.88, saeScale:0.38, laryY:0.9,  vpvHex:0xFCD34D},
-    twang_oral: {thyTilt:-0.35, crcTilt:0,    vpvThick:0.28, fpvX:0.88, saeScale:0.38, laryY:0.9,  vpvHex:0xFB923C},
-    opera:      {thyTilt:-0.42, crcTilt:0,    vpvThick:0.32, fpvX:0.88, saeScale:0.38, laryY:-1.2, vpvHex:0xF87171},
-    belt:       {thyTilt:0,     crcTilt:0.44, vpvThick:1.0,  fpvX:0.88, saeScale:0.38, laryY:0.9,  vpvHex:0xFB923C},
+    speech:     {thyTilt:0,     crcTilt:0,    vpvThick:1.0,  fpvX:0.55, saeScale:1.0,  laryY:0,    vpvHex:0xF59E0B, voileOpen:0,   langueHigh:0  },
+    falsetto:   {thyTilt:0,     crcTilt:0,    vpvThick:0.22, fpvX:0.88, saeScale:1.0,  laryY:0,    vpvHex:0x8B5CF6, voileOpen:0,   langueHigh:0  },
+    sob:        {thyTilt:-0.42, crcTilt:0,    vpvThick:0.28, fpvX:0.88, saeScale:1.0,  laryY:-1.2, vpvHex:0x22D3EE, voileOpen:0,   langueHigh:0.5},
+    twang_nasal:{thyTilt:-0.35, crcTilt:0,    vpvThick:0.28, fpvX:0.88, saeScale:0.38, laryY:0.9,  vpvHex:0xFCD34D, voileOpen:1.0, langueHigh:0.8},
+    twang_oral: {thyTilt:-0.35, crcTilt:0,    vpvThick:0.28, fpvX:0.88, saeScale:0.38, laryY:0.9,  vpvHex:0xFB923C, voileOpen:0,   langueHigh:0.8},
+    opera:      {thyTilt:-0.42, crcTilt:0,    vpvThick:0.32, fpvX:0.88, saeScale:0.38, laryY:-1.2, vpvHex:0xF87171, voileOpen:0,   langueHigh:0.7},
+    belt:       {thyTilt:0,     crcTilt:0.44, vpvThick:1.0,  fpvX:0.88, saeScale:0.38, laryY:0.9,  vpvHex:0xFB923C, voileOpen:0,   langueHigh:0.8},
   };
 
   // Live animated values (lerp sources)
-  var cur = {thyTilt:0, crcTilt:0, vpvThick:1.0, fpvX:0.55, saeScale:1.0, laryY:0};
+  var cur = {thyTilt:0, crcTilt:0, vpvThick:1.0, fpvX:0.55, saeScale:1.0, laryY:0, voileOpen:0, langueHigh:0};
   var tgt = Object.assign({}, STATES.speech);
   var vpvLerp = new THREE.Color(0xF59E0B);
   var tgtVpvCol = new THREE.Color(0xF59E0B);
@@ -1425,16 +1462,26 @@ renderGenres();
     cur.laryY    = lerp(cur.laryY,    tgt.laryY,    k);
     vpvLerp.lerp(tgtVpvCol, k);
 
+    cur.voileOpen  = lerp(cur.voileOpen,  tgt.voileOpen,  k);
+    cur.langueHigh = lerp(cur.langueHigh, tgt.langueHigh, k);
+
     thyG.rotation.x  = cur.thyTilt;
     crcG.rotation.x  = cur.crcTilt;
-    vpvL.scale.set(1, cur.vpvThick, cur.vpvThick);
-    vpvR.scale.set(1, cur.vpvThick, cur.vpvThick);
+    // VPV: écartement médial (adduction/abduction) + épaisseur corps+couverture
+    vpvL.position.x  = -0.12 - cur.fpvX * 0.04; // glissent légèrement à l'ouverture FPV
+    vpvR.position.x  =  0.12 + cur.fpvX * 0.04;
+    vpvL.scale.set(cur.vpvThick, 1, cur.vpvThick);
+    vpvR.scale.set(cur.vpvThick, 1, cur.vpvThick);
     vpvMat.color.copy(vpvLerp);
     fpvL.position.x  = -cur.fpvX;
     fpvR.position.x  =  cur.fpvX;
     saeBody.scale.set(cur.saeScale, 1, cur.saeScale);
     saeRim.scale.set(cur.saeScale, 1, cur.saeScale);
     LG.position.y    = cur.laryY * 0.25;
+    // Voile : 0=haut (rotation.x=-0.25), 1=centré (abaissé, rotation.x=0.45)
+    voileMesh.rotation.x = -0.25 + cur.voileOpen * 0.70;
+    voileMat.color.set(cur.voileOpen > 0.5 ? 0xFDE047 : 0xFDA4AF); // jaune = ouvert/nasal
+    langMesh.position.y = 2.9 + cur.langueHigh * 0.35;
   }
 
   // ─── CAMERA ORBIT ───
@@ -1479,14 +1526,16 @@ renderGenres();
   var lctx = lblCanvas ? lblCanvas.getContext('2d') : null;
   // Positions 3D des ancres de labels (world space, sans offset LG)
   var LABEL_DEFS = [
-    {name:'Hyoïde', pos:new THREE.Vector3(0.7, 2.45, -0.05), col:'#6EE7B7', fixed:true},
-    {name:'Épiglotte', pos:new THREE.Vector3(-0.6, 1.75, 0.25), col:'#F97316', fixed:false},
-    {name:'SAE', pos:new THREE.Vector3(0.85, 1.15, 0), col:'#EC4899', fixed:false},
-    {name:'FPV', pos:new THREE.Vector3(-0.9, 0.38, 0), col:'#10B981', fixed:false},
+    {name:'Voile', pos:new THREE.Vector3(-0.7, 3.25, 0.15), col:'#FDE047', fixed:true},
+    {name:'Langue', pos:new THREE.Vector3(0.75, 2.9, 0.3),  col:'#F472B6', fixed:true},
+    {name:'Hyoïde', pos:new THREE.Vector3(0.75, 2.45, -0.05), col:'#6EE7B7', fixed:true},
+    {name:'Épiglotte', pos:new THREE.Vector3(-0.65, 1.75, 0.25), col:'#F97316', fixed:false},
+    {name:'SAE', pos:new THREE.Vector3(0.9, 1.15, 0), col:'#EC4899', fixed:false},
+    {name:'FPV', pos:new THREE.Vector3(-0.9, 0.40, 0), col:'#10B981', fixed:false},
     {name:'THY', pos:new THREE.Vector3(-0.7, 0.1, 0), col:'#A855F7', fixed:false},
     {name:'VPV', pos:new THREE.Vector3(0.5, -0.05, 0), col:'#F59E0B', fixed:false},
-    {name:'Arytén.', pos:new THREE.Vector3(0.4, -0.05, 0.9), col:'#FBBF24', fixed:false},
-    {name:'CRC', pos:new THREE.Vector3(0.85, -1.35, 0), col:'#0EA5E9', fixed:false},
+    {name:'Arytén.', pos:new THREE.Vector3(0.4, -0.05, 0.92), col:'#FBBF24', fixed:false},
+    {name:'CRC', pos:new THREE.Vector3(0.9, -1.35, 0), col:'#0EA5E9', fixed:false},
   ];
 
   function drawLabels(){
