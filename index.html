@@ -1261,7 +1261,7 @@ renderGenres();
   if(!canvas || !window.THREE){ showErr('Three.js non chargé — vérifie ta connexion internet.'); return; }
 
   // ─── RENDERER ───
-  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false, preserveDrawingBuffer:true});
   renderer.setClearColor(0x04080F, 1);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
@@ -1272,12 +1272,12 @@ renderGenres();
 
 
   // ─── LIGHTING ───
-  scene.add(new THREE.AmbientLight(0x8899CC, 6));
-  const dl1 = new THREE.DirectionalLight(0xBBCCFF, 8);
+  scene.add(new THREE.AmbientLight(0x8899CC, 0.5));
+  const dl1 = new THREE.DirectionalLight(0xBBCCFF, 1.8);
   dl1.position.set(4, 7, 5); scene.add(dl1);
-  const dl2 = new THREE.DirectionalLight(0xAA88DD, 5);
+  const dl2 = new THREE.DirectionalLight(0xAA88DD, 1.2);
   dl2.position.set(-5, 2, -4); scene.add(dl2);
-  const dl3 = new THREE.DirectionalLight(0x6644AA, 3);
+  const dl3 = new THREE.DirectionalLight(0x6644AA, 0.6);
   dl3.position.set(0, -6, 3); scene.add(dl3);
 
   // ─── GRID ───
@@ -1294,44 +1294,19 @@ renderGenres();
   const LG = new THREE.Group();
   scene.add(LG);
 
-  // ─── THY (thyroid cartilage) — bouclier en V, angle interne ~90°, ExtrudeGeometry ───
+  // ─── THY (thyroid cartilage) — bouclier en V, deux lames BoxGeometry ───
   const thyG = new THREE.Group();
   LG.add(thyG);
   const thyMat = M(0xA855F7, 0.75);
 
-  // Contour d'une lame thyroïdienne extrudée (trapèze allongé, hauteur 1.8u ≈ 36mm)
-  function makeThyLame() {
-    var s = new THREE.Shape();
-    s.moveTo(0, -0.9);
-    s.lineTo(0,  0.9);
-    s.lineTo(1.05, 0.65);
-    s.lineTo(1.1, -0.75);
-    s.lineTo(0.3, -0.9);
-    s.closePath();
-    return new THREE.ExtrudeGeometry(s, {depth:0.09, bevelEnabled:false});
-  }
-  var thyLameGeo = makeThyLame();
-  var thyL = new THREE.Mesh(thyLameGeo, thyMat);
+  var thyL = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.8, 0.1), thyMat);
   thyL.rotation.y = Math.PI/4;
-  thyL.position.set(-0.06, -0.9, -0.05);
+  thyL.position.set(-0.55, 0, 0);
   thyG.add(thyL);
-  var thyR = new THREE.Mesh(thyLameGeo, thyMat);
-  thyR.scale.x = -1;
+  var thyR = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.8, 0.1), thyMat);
   thyR.rotation.y = -Math.PI/4;
-  thyR.position.set(0.06, -0.9, -0.05);
+  thyR.position.set(0.55, 0, 0);
   thyG.add(thyR);
-
-  // Proéminence laryngée (pomme d'Adam)
-  var adamShape = new THREE.Shape();
-  adamShape.moveTo(-0.07, -0.55);
-  adamShape.lineTo(0, -0.85);
-  adamShape.lineTo(0, 0.62);
-  adamShape.lineTo(-0.07, 0.50);
-  adamShape.closePath();
-  var adamGeo = new THREE.ExtrudeGeometry(adamShape, {depth:0.14, bevelEnabled:true, bevelSize:0.03, bevelThickness:0.03, bevelSegments:2});
-  var adam = new THREE.Mesh(adamGeo, M(0xC084FC, 0.9));
-  adam.position.set(-0.07, -0.9, -0.19);
-  thyG.add(adam);
 
   // ─── CRC (cricoid cartilage) — arc antérieur fin + lame postérieure haute ───
   const crcG = new THREE.Group();
@@ -1346,18 +1321,9 @@ renderGenres();
   arcAnt.rotation.y = Math.PI * 0.75;
   crcG.add(arcAnt);
 
-  // Lame postérieure : haute (22mm → 1.1u), Shape + Extrude
-  var laminaShape = new THREE.Shape();
-  laminaShape.moveTo(-0.52, -0.22);
-  laminaShape.lineTo(-0.52,  0.88);
-  laminaShape.quadraticCurveTo(0, 1.08, 0.52, 0.88);
-  laminaShape.lineTo(0.52, -0.22);
-  laminaShape.quadraticCurveTo(0, -0.30, -0.52, -0.22);
-  laminaShape.closePath();
-  var laminaGeo = new THREE.ExtrudeGeometry(laminaShape, {depth:0.18, bevelEnabled:false});
-  var lamina = new THREE.Mesh(laminaGeo, M(0x38BDF8, 0.80));
-  lamina.rotation.x = -Math.PI/2;
-  lamina.position.set(-0.52, 0.22, 0.97);
+  // Lame postérieure : haute (22mm → 1.1u), BoxGeometry
+  var lamina = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.1, 0.18), M(0x38BDF8, 0.80));
+  lamina.position.set(0, 0.35, 0.92);
   crcG.add(lamina);
 
   // ─── ARYTÉNOÏDES — pyramides 3 faces + processus vocal spike ───
@@ -1386,83 +1352,52 @@ renderGenres();
   aryRGrp.position.set(0.30, -0.04, 0.74);
   LG.add(aryRGrp);
 
-  // ─── VPV (plis vocaux vrais) — TubeGeometry fusiforme sur CatmullRomCurve3 ───
+  // ─── VPV (plis vocaux vrais) — CylinderGeometry horizontal ───
   const vpvMat = M(0xF59E0B, 0.95);
-
-  function makeVpvTube(sideX) {
-    var pts = [
-      new THREE.Vector3(0,           -0.05, -0.06),
-      new THREE.Vector3(sideX*0.06,  -0.05,  0.20),
-      new THREE.Vector3(sideX*0.10,  -0.05,  0.40),
-      new THREE.Vector3(sideX*0.11,  -0.05,  0.58),
-      new THREE.Vector3(sideX*0.10,  -0.05,  0.70),
-    ];
-    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.065, 7, false);
-  }
-
-  var vpvL = new THREE.Mesh(makeVpvTube(-1), vpvMat);
+  var vpvL = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.80, 8), vpvMat);
+  vpvL.rotation.z = Math.PI/2;
+  vpvL.position.set(-0.22, -0.05, 0.32);
   LG.add(vpvL);
-  var vpvR = new THREE.Mesh(makeVpvTube( 1), vpvMat);
+  var vpvR = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.80, 8), vpvMat);
+  vpvR.rotation.z = Math.PI/2;
+  vpvR.position.set(0.22, -0.05, 0.32);
   LG.add(vpvR);
 
-  // ─── FPV (faux plis / bandes ventriculaires) — TubeGeometry, radius plus large, Y+0.35 ───
+  // ─── FPV (faux plis / bandes ventriculaires) — CylinderGeometry horizontal ───
   const fpvMat = M(0x10B981, 0.75);
 
-  function makeFpvTube(sideX, xOff) {
-    var pts = [
-      new THREE.Vector3(0,               0.35, -0.04),
-      new THREE.Vector3(sideX*xOff*0.5,  0.38,  0.20),
-      new THREE.Vector3(sideX*xOff,      0.38,  0.40),
-      new THREE.Vector3(sideX*xOff*0.9,  0.36,  0.60),
-      new THREE.Vector3(sideX*xOff*0.7,  0.34,  0.72),
-    ];
-    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 14, 0.078, 7, false);
-  }
-
-  // Groupes pour permettre translation X animée
   var fpvLGrp = new THREE.Group();
-  fpvLGrp.add(new THREE.Mesh(makeFpvTube(-1, 0.55), fpvMat));
+  var fpvLMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.078, 0.078, 0.80, 8), fpvMat);
+  fpvLMesh.rotation.z = Math.PI/2;
+  fpvLMesh.position.set(-0.22, 0, 0);
+  fpvLGrp.add(fpvLMesh);
+  fpvLGrp.position.set(0, 0.38, 0.32);
   LG.add(fpvLGrp);
+
   var fpvRGrp = new THREE.Group();
-  fpvRGrp.add(new THREE.Mesh(makeFpvTube( 1, 0.55), fpvMat));
+  var fpvRMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.078, 0.078, 0.80, 8), fpvMat);
+  fpvRMesh.rotation.z = Math.PI/2;
+  fpvRMesh.position.set(0.22, 0, 0);
+  fpvRGrp.add(fpvRMesh);
+  fpvRGrp.position.set(0, 0.38, 0.32);
   LG.add(fpvRGrp);
-  // Alias pour applyState (compatible avec l'API position.x)
   var fpvL = fpvLGrp;
   var fpvR = fpvRGrp;
 
-  // ─── SAE (sphincter ary-épiglottique) — LatheGeometry entonnoir ───
+  // ─── SAE (sphincter ary-épiglottique) — TorusGeometry simple ───
   const saeMat = M(0xEC4899, 0.55);
-  var saePoints = [
-    new THREE.Vector2(0.72, 0.00),
-    new THREE.Vector2(0.82, 0.20),
-    new THREE.Vector2(0.92, 0.40),
-    new THREE.Vector2(1.00, 0.60),
-    new THREE.Vector2(1.05, 0.80),
-  ];
-  var saeBody = new THREE.Mesh(
-    new THREE.LatheGeometry(saePoints, 16, 0, Math.PI * 2),
-    saeMat
-  );
-  saeBody.position.y = 0.75;
+  var saeBody = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.08, 8, 24), saeMat);
+  saeBody.position.y = 0.90;
   LG.add(saeBody);
   var saeRim = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.055, 6, 22), M(0xF472B6, 0.75));
   saeRim.position.y = 1.55;
   LG.add(saeRim);
 
-  // ─── ÉPIGLOTTE — Shape pétale oblong + ExtrudeGeometry (depth 0.06) ───
+  // ─── ÉPIGLOTTE — BoxGeometry (feuille simple) ───
   const epiMat = M(0xF97316, 0.65);
-  var epiShape = new THREE.Shape();
-  epiShape.moveTo(0, -0.55);
-  epiShape.quadraticCurveTo(-0.42, -0.20, -0.52, 0.25);
-  epiShape.quadraticCurveTo(-0.38, 0.72,   0.00,  0.80);
-  epiShape.quadraticCurveTo( 0.38, 0.72,   0.52,  0.25);
-  epiShape.quadraticCurveTo( 0.42, -0.20,  0.00, -0.55);
-  epiShape.closePath();
-  var epiGeo = new THREE.ExtrudeGeometry(epiShape, {depth:0.06, bevelEnabled:true, bevelSize:0.02, bevelThickness:0.02, bevelSegments:2});
-  var epiBody = new THREE.Mesh(epiGeo, epiMat);
-  epiBody.position.set(-0.03, 1.20, 0.08);
+  var epiBody = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.3, 0.07), epiMat);
+  epiBody.position.set(0, 1.20, 0.08);
   epiBody.rotation.x = -0.62;
-  epiBody.rotation.z =  0.05;
   LG.add(epiBody);
 
   // ─── OS HYOÏDE — TorusGeometry ~270°, fixe (hors LG) ───
@@ -1769,13 +1704,14 @@ renderGenres();
     resize3D();
     loop();
   }
+  // Démarrer immédiatement — resize3D gère le cas canvas 0×0
+  startOnce();
+  // Backup IntersectionObserver pour scroll tardif
   var obs = new IntersectionObserver(function(entries){
     if(entries[0].isIntersecting) startOnce();
-  }, {threshold:0.1});
+  }, {threshold:0});
   var section = document.getElementById('lab3d');
-  if(section) obs.observe(section); else startOnce();
-  // Fallback : démarrer de toute façon après 3s si l'observer n'a pas tiré
-  setTimeout(function(){ startOnce(); }, 3000);
+  if(section) obs.observe(section);
 
   } catch(e) { showErr((e && e.message) ? e.message : 'Erreur WebGL inconnue'); }
 })();
