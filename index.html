@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estill Voice Training® — Cours 3D Interactif</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --bg:#070B14;--s1:rgba(255,255,255,0.04);--s2:rgba(255,255,255,0.08);
+  --b:rgba(255,255,255,0.09);--txt:#E8EEFF;--dim:#7B90C4;
+  --l1:#3B82F6;--l2:#8B5CF6;--gold:#F59E0B;
+  --found:#0EA5E9;--larx:#A855F7;--cond:#10B981;--anc:#EC4899;--spe:#F59E0B;
+  --r:16px;--trans:all .35s cubic-bezier(.4,0,.2,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;overflow-x:hidden}
+canvas#bg{position:fixed;top:0;left:0;z-index:0;pointer-events:none}
+
+/* ─── PROGRESS BAR ─── */
+#prog-bar{position:fixed;top:0;left:0;z-index:100;height:3px;background:linear-gradient(90deg,var(--l1),var(--l2),var(--gold));width:0%;transition:width .4s ease}
+
+/* ─── NAV ─── */
+nav{position:fixed;top:0;left:0;right:0;z-index:99;display:flex;align-items:center;padding:12px 24px;gap:12px;background:rgba(7,11,20,0.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--b)}
+.nav-logo{font-weight:700;font-size:15px;letter-spacing:.5px;color:var(--gold);flex:1}
+.nav-logo span{font-weight:400;color:var(--dim);font-size:13px}
+.nav-btn{padding:6px 16px;border-radius:20px;border:1px solid var(--b);background:transparent;color:var(--dim);font-size:13px;cursor:pointer;transition:var(--trans)}
+.nav-btn:hover,.nav-btn.active{background:var(--s2);color:var(--txt);border-color:var(--l1)}
+#prog-label{font-size:12px;color:var(--dim)}
+
+/* ─── HERO ─── */
+#hero{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:80px 24px 60px}
+.badge{display:inline-block;padding:5px 16px;border-radius:20px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);font-size:12px;letter-spacing:2px;color:var(--l1);margin-bottom:28px;text-transform:uppercase}
+#hero h1{font-size:clamp(40px,7vw,90px);font-weight:900;line-height:1;letter-spacing:-2px;background:linear-gradient(135deg,#fff 30%,var(--l1) 70%,var(--l2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+#hero h1 em{font-style:normal;background:linear-gradient(135deg,var(--gold),#F97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:18px;color:var(--dim);margin-bottom:48px;max-width:520px}
+.hero-stats{display:flex;gap:40px;margin-bottom:48px;flex-wrap:wrap;justify-content:center}
+.stat{text-align:center}
+.stat strong{display:block;font-size:48px;font-weight:900;background:linear-gradient(135deg,var(--gold),#F97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.stat small{font-size:13px;color:var(--dim)}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.btn-primary{padding:14px 32px;border-radius:30px;background:linear-gradient(135deg,var(--l1),var(--l2));border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:var(--trans);letter-spacing:.3px}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(139,92,246,.4)}
+.btn-outline{padding:14px 32px;border-radius:30px;background:transparent;border:1px solid var(--b);color:var(--dim);font-size:15px;font-weight:600;cursor:pointer;transition:var(--trans)}
+.btn-outline:hover{border-color:var(--l1);color:var(--txt);background:var(--s1)}
+
+/* ─── SECTION ─── */
+section{position:relative;z-index:1;padding:80px 24px}
+.sec-header{text-align:center;margin-bottom:56px}
+.level-badge{display:inline-block;padding:6px 20px;border-radius:20px;font-size:13px;font-weight:700;margin-bottom:16px;letter-spacing:1px}
+.lv1{background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.4);color:var(--l1)}
+.lv2{background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.4);color:var(--l2)}
+.sec-header h2{font-size:clamp(24px,4vw,40px);font-weight:800;margin-bottom:12px;letter-spacing:-1px}
+.sec-header p{color:var(--dim);font-size:16px;max-width:560px;margin:0 auto}
+
+/* ─── L1 GRID ─── */
+#l1-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;max-width:1400px;margin:0 auto}
+
+/* ─── CARD 3D FLIP ─── */
+.card-wrap{perspective:1000px;cursor:pointer;min-height:220px;transition:min-height .55s cubic-bezier(.4,0,.2,1)}
+.card-wrap:not(.flipped):hover .card-inner{transform:rotateY(8deg) rotateX(-4deg);box-shadow:0 20px 48px rgba(0,0,0,.6)}
+.card-wrap.flipped .card-inner{transform:rotateY(180deg)!important}
+.card-inner{position:relative;width:100%;height:100%;min-height:220px;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1),min-height .55s cubic-bezier(.4,0,.2,1);border-radius:var(--r);box-shadow:0 4px 24px rgba(0,0,0,.4)}
+.card-face{position:absolute;width:100%;backface-visibility:hidden;border-radius:var(--r);border:1px solid var(--b);background:var(--s1);padding:22px;display:flex;flex-direction:column}
+.card-front{min-height:220px}
+.card-back{transform:rotateY(180deg);background:var(--bg);border-color:var(--b)}
+.card-num{font-size:11px;font-weight:700;letter-spacing:2px;opacity:.5;margin-bottom:8px}
+.card-icon{font-size:32px;margin-bottom:10px}
+.card-title{font-size:18px;font-weight:800;margin-bottom:4px}
+.card-sub{font-size:12px;color:var(--dim)}
+.card-type-bar{position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
+.card-opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:12px}
+.opt-pill{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1)}
+.card-check{position:absolute;bottom:14px;right:14px;width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);background:transparent;display:flex;align-items:center;justify-content:center;font-size:12px;transition:var(--trans)}
+.card-check.done{background:var(--cond);border-color:var(--cond)}
+.back-section{margin-bottom:14px}
+.back-label{font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--dim);margin-bottom:6px;text-transform:uppercase}
+.back-text{font-size:13px;line-height:1.6;color:#C8D8FF}
+.back-options{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.back-opt{padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07)}
+.back-opt strong{font-size:12px;font-weight:700;color:var(--gold)}
+.back-opt p{font-size:12px;color:var(--dim);margin-top:2px}
+.back-exo{padding:10px 12px;border-radius:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);font-size:12px;line-height:1.6;color:#A7F3D0}
+.flip-hint{font-size:11px;color:var(--dim);text-align:center;margin-top:10px;opacity:.7}
+.complete-btn{width:100%;margin-top:12px;padding:8px;border-radius:10px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);color:var(--cond);font-size:12px;font-weight:700;cursor:pointer;transition:var(--trans)}
+.complete-btn:hover{background:rgba(16,185,129,0.25)}
+.complete-btn.done-btn{background:rgba(16,185,129,0.25);color:#fff}
+
+/* ─── L2 GRID ─── */
+#l2-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;max-width:1400px;margin:0 auto}
+.q-card{border-radius:var(--r);border:1px solid var(--b);background:var(--s1);padding:28px;cursor:pointer;transition:var(--trans);position:relative;overflow:hidden}
+.q-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}
+.q-card:hover{background:var(--s2);transform:translateY(-4px);box-shadow:0 20px 48px rgba(0,0,0,.5)}
+.q-name{font-size:28px;font-weight:900;margin-bottom:4px;letter-spacing:-1px}
+.q-sub{font-size:13px;color:var(--dim);margin-bottom:16px}
+.q-desc{font-size:14px;color:#B0C4EE;line-height:1.6;margin-bottom:20px}
+.q-acoustic{padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.04);font-size:12px;color:var(--dim);margin-bottom:20px}
+.q-recipe-title{font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--dim);margin-bottom:10px;text-transform:uppercase}
+.q-recipe{display:flex;flex-wrap:wrap;gap:6px}
+.r-pill{padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;border:1px solid}
+.q-risk{padding:10px 14px;border-radius:10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);font-size:12px;color:#FCA5A5;margin-top:14px}
+.q-exo{padding:10px 14px;border-radius:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);font-size:12px;color:#A7F3D0;margin-top:10px;line-height:1.6}
+.expand-toggle{font-size:12px;color:var(--dim);margin-top:14px;display:flex;align-items:center;gap:6px}
+.expand-toggle::after{content:'▼';font-size:10px}
+.q-detail{display:none;margin-top:14px}
+.q-card.open .q-detail{display:block}
+.q-card.open .expand-toggle::after{content:'▲'}
+
+/* ─── DIVIDER ─── */
+.divider{max-width:1400px;margin:0 auto 60px;border:none;border-top:1px solid var(--b)}
+
+/* ─── LEGEND ─── */
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:28px;justify-content:center}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim)}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* ─── ANATOMY SECTION ─── */
+#anatomie{background:rgba(255,255,255,0.02);border-top:1px solid var(--b);border-bottom:1px solid var(--b)}
+.anatomy-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;max-width:1000px;margin:0 auto;align-items:center}
+.anatomy-svg-wrap{position:relative}
+.anatomy-svg-wrap svg{width:100%;max-width:420px;display:block;margin:0 auto;filter:drop-shadow(0 0 20px rgba(139,92,246,0.3))}
+.anat-labels{display:flex;flex-direction:column;gap:12px}
+.anat-label{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:10px;background:var(--s1);border:1px solid var(--b);cursor:pointer;transition:var(--trans)}
+.anat-label:hover{background:var(--s2)}
+.anat-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.anat-info strong{display:block;font-size:14px;font-weight:700;margin-bottom:2px}
+.anat-info p{font-size:12px;color:var(--dim);line-height:1.5}
+
+/* ─── FOOTER ─── */
+footer{position:relative;z-index:1;text-align:center;padding:40px 24px;border-top:1px solid var(--b);color:var(--dim);font-size:13px}
+footer p{margin-bottom:6px}
+footer strong{color:var(--txt)}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:640px){
+  #l1-grid{grid-template-columns:1fr 1fr}
+  .anatomy-grid{grid-template-columns:1fr}
+  .anatomy-svg-wrap{order:2}
+}
+@media(max-width:400px){
+  #l1-grid{grid-template-columns:1fr}
+}
+
+/* ─── GLOW ANIMATIONS ─── */
+@keyframes glow{0%,100%{opacity:.4}50%{opacity:.8}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.float-anim{animation:float 6s ease-in-out infinite}
+
+/* ─── LABO 3D ─── */
+.lab-q-btn{transition:all .2s;opacity:.75}
+.lab-q-btn:hover{opacity:1;transform:translateY(-1px)}
+.lab-q-btn.active{opacity:1;outline:2px solid currentColor;outline-offset:3px}
+.lab-view-btn{padding:5px 11px;border-radius:14px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.55);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.3px}
+.lab-view-btn:hover{background:rgba(255,255,255,0.14);color:var(--txt);border-color:var(--l1)}
+
+/* ─── COLOR UTILITIES ─── */
+.c-found{color:var(--found)}.c-larx{color:var(--larx)}.c-cond{color:var(--cond)}.c-anc{color:var(--anc)}.c-spe{color:var(--spe)}
+.bg-found{background:rgba(14,165,233,.15);border-color:rgba(14,165,233,.4)!important}
+.bg-larx{background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.4)!important}
+.bg-cond{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.4)!important}
+.bg-anc{background:rgba(236,72,153,.15);border-color:rgba(236,72,153,.4)!important}
+.bg-spe{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.4)!important}
+
+/* ─── GENRE DECODER ─── */
+#gd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;max-width:1200px;margin:0 auto}
+.gd-card{border-radius:14px;border:1px solid var(--b);background:var(--s1);cursor:pointer;transition:all .3s;overflow:hidden}
+.gd-card:hover{background:var(--s2);transform:translateY(-2px)}
+.gd-bar{height:3px;width:100%;flex-shrink:0}
+.gd-front{padding:18px 18px 12px}
+.gd-icon{font-size:28px;margin-bottom:8px;display:block}
+.gd-name{font-size:16px;font-weight:800;margin-bottom:3px}
+.gd-tagline{font-size:11px;color:var(--dim);margin-bottom:12px}
+.gd-regs{display:flex;gap:6px;flex-wrap:wrap}
+.gd-reg{padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--dim)}
+.gd-detail{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.4,0,.2,1)}
+.gd-card.open .gd-detail{max-height:700px}
+.gd-detail-inner{padding:0 18px 18px;border-top:1px solid var(--b);margin-top:12px}
+.gd-sub{font-size:9px;font-weight:700;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;margin:10px 0 5px}
+.gd-sig{font-size:11px;color:#C8D8FF;line-height:1.6;padding:8px 10px;background:rgba(255,255,255,0.04);border-radius:8px;border-left:2px solid currentColor}
+.gd-tip{font-size:11px;color:var(--dim);line-height:1.5;font-style:italic;margin-top:8px;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,0.03)}
+.gd-refs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.gd-ref-pill{padding:2px 8px;border-radius:8px;font-size:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.65)}
+.gd-toggle{display:flex;gap:4px;margin:10px 0 6px}
+.gd-toggle-btn{padding:4px 12px;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:transparent;font-size:10px;font-weight:700;cursor:pointer;transition:all .2s;color:var(--dim)}
+.gd-toggle-btn.active{color:var(--txt);border-color:currentColor}
+.gd-3d-btn{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:8px 18px;border-radius:20px;border:none;cursor:pointer;font-size:12px;font-weight:700;transition:all .2s;color:#fff}
+.gd-3d-btn:hover{transform:translateY(-1px);opacity:.85}
+.gd-recipe-mini{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.gd-recipe-pill{padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)}
+</style>
+</head>
+<body>
+<div id="prog-bar"></div>
+<canvas id="bg"></canvas>
+
+<nav>
+  <div class="nav-logo">EVT® <span>· Cours 3D Interactif · Français</span></div>
+  <button class="nav-btn active" onclick="scrollSection('hero')">Accueil</button>
+  <button class="nav-btn" onclick="scrollSection('level1')">Niveau 1</button>
+  <button class="nav-btn" onclick="scrollSection('anatomie')">Anatomie</button>
+  <button class="nav-btn" onclick="scrollSection('lab3d')">Labo 3D</button>
+  <button class="nav-btn" onclick="scrollSection('genre-decoder')">Genres</button>
+  <button class="nav-btn" onclick="scrollSection('level2')">Niveau 2</button>
+  <span id="prog-label">0/25 complété</span>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<header id="hero">
+  <div class="badge">EVT® · Édition française · 2e Édition</div>
+  <h1>Estill Voice<br><em>Training®</em></h1>
+  <p class="hero-sub">Le modèle complet en cours interactif 3D — Niveaux 1 & 2 — Jo Estill</p>
+  <div class="hero-stats">
+    <div class="stat"><strong>17</strong><small>Structures N1</small></div>
+    <div class="stat"><strong>7</strong><small>Qualités vocales</small></div>
+    <div class="stat"><strong>∞</strong><small>Combinaisons</small></div>
+  </div>
+  <div class="hero-cta">
+    <button class="btn-primary" onclick="document.getElementById('level1').scrollIntoView({behavior:'smooth'})">Niveau 1 — Figures →</button>
+    <button class="btn-outline" onclick="document.getElementById('level2').scrollIntoView({behavior:'smooth'})">Niveau 2 — Qualités</button>
+  </div>
+</header>
+
+<!-- ═══ NIVEAU 1 ═══ -->
+<section id="level1">
+  <div class="sec-header">
+    <div class="level-badge lv1">NIVEAU 1</div>
+    <h2>Figures pour le contrôle de la voix</h2>
+    <p>Maîtrisez chaque structure anatomique de façon indépendante</p>
+    <div class="legend" style="margin-top:24px">
+      <div class="leg-item"><div class="leg-dot" style="background:var(--found)"></div>Fondations</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--larx)"></div>Structures du larynx</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--cond)"></div>Conduit vocal</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--anc)"></div>Ancrage</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--spe)"></div>Exercice spécial</div>
+    </div>
+  </div>
+  <div id="l1-grid"></div>
+</section>
+
+<hr class="divider" style="margin:0 auto 0">
+
+<!-- ═══ ANATOMIE 3D ═══ -->
+<section id="anatomie">
+  <div class="sec-header">
+    <div class="level-badge" style="background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.4);color:var(--larx)">ANATOMIE</div>
+    <h2>Système de production vocale</h2>
+    <p>Puissance · Source · Filtre — les 3 domaines du modèle Estill</p>
+  </div>
+  <!-- Vue supérieure larynx Estill -->
+  <div style="max-width:900px;margin:0 auto 48px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px">
+    <div style="text-align:center;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--dim);margin-bottom:16px;text-transform:uppercase">Vue supérieure du larynx — modèle Estill</div>
+    <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;justify-content:center">
+      <svg viewBox="0 0 280 260" xmlns="http://www.w3.org/2000/svg" style="width:280px;flex-shrink:0">
+        <!-- Thyroid cartilage V shape (anterior) -->
+        <path d="M140 32 L72 145 Q68 155 75 160 L90 165 Q100 168 108 162 L140 110 L172 162 Q180 168 190 165 L205 160 Q212 155 208 145 Z" fill="rgba(168,85,247,0.12)" stroke="rgba(168,85,247,0.8)" stroke-width="2" stroke-linejoin="round"/>
+        <text x="140" y="22" text-anchor="middle" fill="rgba(168,85,247,0.9)" font-size="9" font-weight="700">CARTILAGE THYROÏDE (THY)</text>
+        <!-- Commissure antérieure -->
+        <circle cx="140" cy="110" r="4" fill="rgba(168,85,247,0.9)"/>
+        <text x="155" y="108" fill="rgba(168,85,247,0.6)" font-size="7">commissure ant.</text>
+
+        <!-- Cricoid ring (posterior, wider at back) -->
+        <path d="M108 162 Q85 185 85 210 Q85 240 140 248 Q195 240 195 210 Q195 185 172 162" fill="rgba(14,165,233,0.08)" stroke="rgba(14,165,233,0.7)" stroke-width="2"/>
+        <text x="140" y="258" text-anchor="middle" fill="rgba(14,165,233,0.8)" font-size="9" font-weight="700">CARTILAGE CRICOÏDE (CRC)</text>
+
+        <!-- True vocal folds (VPV) — two symmetric blades meeting anteriorly -->
+        <path d="M140 110 Q118 148 108 162" fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.9)" stroke-width="2.5"/>
+        <path d="M140 110 Q162 148 172 162" fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.9)" stroke-width="2.5"/>
+        <text x="80" y="140" fill="rgba(245,158,11,0.9)" font-size="8" font-weight="700">VPV</text>
+        <text x="80" y="150" fill="rgba(245,158,11,0.6)" font-size="7">(vrais plis vocaux)</text>
+        <line x1="103" y1="140" x2="113" y2="142" stroke="rgba(245,158,11,0.5)" stroke-width="1"/>
+
+        <!-- Glotte (space between VPV) -->
+        <text x="155" y="148" fill="rgba(255,255,255,0.4)" font-size="7" font-style="italic">glotte</text>
+
+        <!-- Arytenoid cartilages (posterior) -->
+        <ellipse cx="122" cy="170" rx="12" ry="10" fill="rgba(245,158,11,0.2)" stroke="rgba(245,158,11,0.7)" stroke-width="1.5"/>
+        <ellipse cx="158" cy="170" rx="12" ry="10" fill="rgba(245,158,11,0.2)" stroke="rgba(245,158,11,0.7)" stroke-width="1.5"/>
+        <text x="140" y="186" text-anchor="middle" fill="rgba(245,158,11,0.6)" font-size="7">cartilages aryténoïdes</text>
+
+        <!-- False vocal folds (FPV) — wider/above -->
+        <path d="M140 88 Q112 128 100 155" fill="none" stroke="rgba(16,185,129,0.6)" stroke-width="1.5" stroke-dasharray="5,3"/>
+        <path d="M140 88 Q168 128 180 155" fill="none" stroke="rgba(16,185,129,0.6)" stroke-width="1.5" stroke-dasharray="5,3"/>
+        <text x="55" y="112" fill="rgba(16,185,129,0.8)" font-size="7.5" font-weight="700">FPV</text>
+        <text x="55" y="122" fill="rgba(16,185,129,0.5)" font-size="7">(faux plis)</text>
+
+        <!-- SAE ring at top -->
+        <ellipse cx="140" cy="68" rx="42" ry="22" fill="rgba(236,72,153,0.08)" stroke="rgba(236,72,153,0.7)" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <text x="140" y="48" text-anchor="middle" fill="rgba(236,72,153,0.8)" font-size="8" font-weight="700">SAE</text>
+        <text x="140" y="58" text-anchor="middle" fill="rgba(236,72,153,0.5)" font-size="7">sphincter ary-épiglottique</text>
+
+        <!-- POSTERIOR label -->
+        <text x="140" y="243" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-size="7">← POSTÉRIEUR</text>
+        <text x="140" y="35" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-size="7">ANTÉRIEUR →</text>
+      </svg>
+
+      <!-- Options states legend -->
+      <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">États des structures (options Estill)</div>
+        <div style="padding:10px 12px;border-radius:10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2)">
+          <div style="font-size:11px;font-weight:700;color:rgba(245,158,11,0.9);margin-bottom:4px">VPV — Corps & Couverture</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.6">Relâchés (fry) · Épais (modal) · Fins (falsetto) · Rigides (tension max)</div>
+        </div>
+        <div style="padding:10px 12px;border-radius:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2)">
+          <div style="font-size:11px;font-weight:700;color:rgba(16,185,129,0.9);margin-bottom:4px">FPV — Faux plis vocaux</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.6">Contractés · Centrés (EVPC) · Rétractés ←→</div>
+        </div>
+        <div style="padding:10px 12px;border-radius:10px;background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.2)">
+          <div style="font-size:11px;font-weight:700;color:rgba(236,72,153,0.9);margin-bottom:4px">SAE — Sphincter AE</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.6">Large (Speech/Sob/Falsetto) · Étroit (Twang/Opera/Belt) → formant du chanteur 2–4 kHz</div>
+        </div>
+        <div style="padding:10px 12px;border-radius:10px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2)">
+          <div style="font-size:11px;font-weight:700;color:rgba(168,85,247,0.9);margin-bottom:4px">THY — Cartilage thyroïde</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.6">Vertical (Speech/Falsetto/Belt) · Basculé ↓ → étire les PV (Sob/Twang/Opera)</div>
+        </div>
+        <div style="padding:10px 12px;border-radius:10px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2)">
+          <div style="font-size:11px;font-weight:700;color:rgba(14,165,233,0.9);margin-bottom:4px">CRC — Cartilage cricoïde</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.6">Vertical (toutes sauf Belt) · Basculé ↑ → signature spécifique du Belt</div>
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.2);margin-top:4px;line-height:1.5">Source : Colton & Estill (1981) · Cahier du participant Estill Voice Training® 2e Éd.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="anatomy-grid">
+    <div class="anatomy-svg-wrap float-anim">
+      <svg viewBox="0 0 300 500" xmlns="http://www.w3.org/2000/svg">
+        <!-- Head outline -->
+        <ellipse cx="150" cy="80" rx="70" ry="75" fill="none" stroke="rgba(139,92,246,0.3)" stroke-width="1.5"/>
+        <!-- Mouth -->
+        <path d="M110 125 Q150 145 190 125" fill="none" stroke="rgba(168,85,247,0.6)" stroke-width="2"/>
+        <!-- Nose -->
+        <path d="M135 100 L130 118 Q150 122 170 118 L165 100" fill="none" stroke="rgba(168,85,247,0.4)" stroke-width="1.5"/>
+        <!-- Palais mou label area -->
+        <ellipse cx="150" cy="110" rx="30" ry="8" fill="rgba(245,158,11,0.12)" stroke="rgba(245,158,11,0.5)" stroke-width="1.5" stroke-dasharray="4,2"/>
+
+        <!-- Langue -->
+        <path d="M118 130 Q150 155 182 130 Q165 165 135 165 Z" fill="rgba(236,72,153,0.15)" stroke="rgba(236,72,153,0.6)" stroke-width="1.5"/>
+
+        <!-- Pharynx / neck -->
+        <rect x="120" y="155" width="60" height="80" rx="10" fill="rgba(59,130,246,0.06)" stroke="rgba(59,130,246,0.2)" stroke-width="1"/>
+
+        <!-- Larynx box -->
+        <rect x="110" y="220" width="80" height="65" rx="12" fill="rgba(139,92,246,0.12)" stroke="rgba(139,92,246,0.7)" stroke-width="2"/>
+        <!-- THY label -->
+        <text x="150" y="237" text-anchor="middle" fill="rgba(168,85,247,0.9)" font-size="9" font-weight="700">THY</text>
+        <!-- Vocal folds -->
+        <line x1="125" y1="258" x2="175" y2="258" stroke="rgba(245,158,11,0.9)" stroke-width="2.5"/>
+        <path d="M125 258 Q150 268 175 258" fill="none" stroke="rgba(245,158,11,0.5)" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <!-- PV label -->
+        <text x="150" y="272" text-anchor="middle" fill="rgba(245,158,11,0.8)" font-size="8">PV</text>
+        <!-- FPV -->
+        <line x1="128" y1="247" x2="172" y2="247" stroke="rgba(16,185,129,0.7)" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <text x="150" y="245" text-anchor="middle" fill="rgba(16,185,129,0.8)" font-size="7">FPV</text>
+        <!-- EAS top of larynx -->
+        <ellipse cx="150" cy="227" rx="28" ry="6" fill="none" stroke="rgba(236,72,153,0.6)" stroke-width="1.5"/>
+        <text x="150" y="214" text-anchor="middle" fill="rgba(236,72,153,0.8)" font-size="7">SAE</text>
+
+        <!-- CRC (cricoid) below -->
+        <ellipse cx="150" cy="292" rx="30" ry="9" fill="rgba(14,165,233,0.1)" stroke="rgba(14,165,233,0.5)" stroke-width="1.5"/>
+        <text x="150" y="295" text-anchor="middle" fill="rgba(14,165,233,0.8)" font-size="8" font-weight="700">CRC</text>
+
+        <!-- Trachée -->
+        <rect x="138" y="300" width="24" height="80" rx="5" fill="rgba(59,130,246,0.06)" stroke="rgba(59,130,246,0.3)" stroke-width="1.5"/>
+        <!-- Anneaux trachéaux -->
+        <line x1="138" y1="315" x2="162" y2="315" stroke="rgba(59,130,246,0.3)" stroke-width="1"/>
+        <line x1="138" y1="330" x2="162" y2="330" stroke="rgba(59,130,246,0.3)" stroke-width="1"/>
+        <line x1="138" y1="345" x2="162" y2="345" stroke="rgba(59,130,246,0.3)" stroke-width="1"/>
+        <line x1="138" y1="360" x2="162" y2="360" stroke="rgba(59,130,246,0.3)" stroke-width="1"/>
+
+        <!-- Poumons -->
+        <path d="M110 378 Q80 370 75 410 Q80 445 110 455 Q130 450 138 440 L138 378 Z" fill="rgba(14,165,233,0.08)" stroke="rgba(14,165,233,0.4)" stroke-width="1.5"/>
+        <path d="M190 378 Q220 370 225 410 Q220 445 190 455 Q170 450 162 440 L162 378 Z" fill="rgba(14,165,233,0.08)" stroke="rgba(14,165,233,0.4)" stroke-width="1.5"/>
+        <!-- Diaphragme -->
+        <path d="M75 455 Q150 490 225 455" fill="none" stroke="rgba(14,165,233,0.5)" stroke-width="2"/>
+        <text x="150" y="476" text-anchor="middle" fill="rgba(14,165,233,0.7)" font-size="9">Diaphragme</text>
+
+        <!-- Domain labels -->
+        <text x="30" y="260" fill="rgba(168,85,247,0.7)" font-size="9" font-weight="700">SOURCE</text>
+        <text x="30" y="272" fill="rgba(168,85,247,0.5)" font-size="8">Larynx · PV</text>
+        <line x1="65" y1="260" x2="108" y2="255" stroke="rgba(168,85,247,0.4)" stroke-width="1" stroke-dasharray="3,2"/>
+
+        <text x="220" y="150" fill="rgba(245,158,11,0.7)" font-size="9" font-weight="700">FILTRE</text>
+        <text x="220" y="162" fill="rgba(245,158,11,0.5)" font-size="8">Conduit vocal</text>
+        <line x1="218" y1="155" x2="183" y2="145" stroke="rgba(245,158,11,0.4)" stroke-width="1" stroke-dasharray="3,2"/>
+
+        <text x="220" y="415" fill="rgba(14,165,233,0.7)" font-size="9" font-weight="700">PUISSANCE</text>
+        <text x="220" y="427" fill="rgba(14,165,233,0.5)" font-size="8">Poumons · Torse</text>
+        <line x1="218" y1="420" x2="192" y2="420" stroke="rgba(14,165,233,0.4)" stroke-width="1" stroke-dasharray="3,2"/>
+      </svg>
+    </div>
+    <div class="anat-labels">
+      <div class="anat-label">
+        <div class="anat-dot" style="background:var(--found)"></div>
+        <div class="anat-info"><strong>Puissance — Poumons & Torse</strong><p>Volume (intensité) · Aérodynamisme · Bruit du souffle. Le diaphragme contrôle le débit d'air.</p></div>
+      </div>
+      <div class="anat-label">
+        <div class="anat-dot" style="background:var(--larx)"></div>
+        <div class="anat-info"><strong>Source — Larynx & Plis vocaux (PV)</strong><p>Bio-élasticité · Notes & harmoniques · Volume. Les PV vibrent et génèrent le son fondamental.</p></div>
+      </div>
+      <div class="anat-label" style="border-color:rgba(245,158,11,0.3)">
+        <div class="anat-dot" style="background:var(--gold)"></div>
+        <div class="anat-info"><strong>Filtre — Conduit vocal (Langue · Voile · Larynx)</strong><p>Équilibre aigus/graves · Voyelles & formants · Résonance. Forme le spectre sonore final.</p></div>
+      </div>
+      <div class="anat-label">
+        <div class="anat-dot" style="background:var(--cond)"></div>
+        <div class="anat-info"><strong>Sphincter AE (SAE) — Formant du chanteur</strong><p>Resserrement du vestibule laryngé → énergie spectrale 2–4 kHz → brillance et projection.</p></div>
+      </div>
+      <div class="anat-label">
+        <div class="anat-dot" style="background:var(--anc)"></div>
+        <div class="anat-info"><strong>Ancrage — Tête, cou & torse</strong><p>Muscles extrinsèques activés → stabilité laryngée → intensité sans pousser le souffle.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ LABO 3D ═══ -->
+<section id="lab3d" style="padding:80px 24px;background:rgba(4,8,18,0.6);border-top:1px solid var(--b);border-bottom:1px solid var(--b)">
+  <div class="sec-header">
+    <span class="level-badge" style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);color:var(--gold)">LABORATOIRE 3D</span>
+    <h2>Visualiseur Anatomique Interactif</h2>
+    <p>Sélectionnez une qualité vocale — observez les structures s'animer en temps réel</p>
+  </div>
+  <div id="lab-qs" style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:20px;max-width:900px;margin-left:auto;margin-right:auto"></div>
+  <div id="lab3d-wrap" style="position:relative;max-width:900px;margin:0 auto;border-radius:16px;overflow:hidden;background:#04080F;border:1px solid rgba(255,255,255,0.08);box-shadow:0 0 60px rgba(139,92,246,0.15)">
+    <canvas id="lab3d-canvas" style="display:block;width:100%"></canvas>
+    <div style="position:absolute;top:12px;right:12px;display:flex;gap:6px">
+      <button class="lab-view-btn" onclick="setLabView('top')">⬆ Sup</button>
+      <button class="lab-view-btn" onclick="setLabView('lat')">↔ Lat</button>
+      <button class="lab-view-btn" onclick="setLabView('q34')">⤢ 3/4</button>
+    </div>
+    <div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(255,255,255,0.25);white-space:nowrap;pointer-events:none">Glissez pour pivoter · Boutons pour prérégler la vue</div>
+  </div>
+  <div id="lab3d-state" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px;max-width:900px;margin:16px auto 0"></div>
+  <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:20px;max-width:900px;margin-left:auto;margin-right:auto">
+    <span style="font-size:11px;color:rgba(255,255,255,0.3);align-self:center">Légende :</span>
+    <span style="font-size:11px;color:rgba(255,255,255,0.5)"><span style="color:#A855F7">■</span> THY</span>
+    <span style="font-size:11px;color:rgba(255,255,255,0.5)"><span style="color:#0EA5E9">■</span> CRC</span>
+    <span style="font-size:11px;color:rgba(255,255,255,0.5)"><span style="color:#F59E0B">■</span> VPV (plis vocaux vrais)</span>
+    <span style="font-size:11px;color:rgba(255,255,255,0.5)"><span style="color:#10B981">■</span> FPV (faux plis)</span>
+    <span style="font-size:11px;color:rgba(255,255,255,0.5)"><span style="color:#EC4899">■</span> SAE</span>
+    <span style="font-size:11px;color:rgba(255,255,255,0.5)"><span style="color:#FBBF24">■</span> Aryténoïdes</span>
+  </div>
+</section>
+
+<!-- ═══ GENRE DECODER ═══ -->
+<section id="genre-decoder" style="padding:80px 24px;background:rgba(4,8,18,0.8);border-top:1px solid var(--b);border-bottom:1px solid var(--b)">
+  <div class="sec-header">
+    <span class="level-badge" style="background:rgba(236,72,153,0.15);border:1px solid rgba(236,72,153,0.4);color:#EC4899">GENRE DECODER</span>
+    <h2>Anatomie d'un style musical</h2>
+    <p>Chaque genre musical = une recette Estill dominante. Cliquez un genre pour décoder ses structures.</p>
+  </div>
+  <div id="gd-grid"></div>
+</section>
+
+<!-- ═══ NIVEAU 2 ═══ -->
+<section id="level2" style="padding-top:80px">
+  <div class="sec-header">
+    <div class="level-badge lv2">NIVEAU 2</div>
+    <h2>Combinaisons — 6 Qualités vocales</h2>
+    <p>Chaque qualité = une « recette » de figures du Niveau 1</p>
+  </div>
+  <div id="l2-grid"></div>
+</section>
+
+<footer>
+  <p><strong>Estill Voice Training®</strong> — Cahier du participant · Niveaux 1 & 2 · 2e Édition française</p>
+  <p>Écrit par Jo Estill · Traduit par Julie Cimon Racine · © 2019 Estill Voice International, LLC</p>
+  <p style="margin-top:12px;opacity:.5">Interface 3D · Usage pédagogique personnel · Lauren Conforti</p>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════
+// THREE.JS HERO BACKGROUND
+// ═══════════════════════════════════════════
+(function(){
+  const canvas=document.getElementById('bg');
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.setClearColor(0x000000,0);
+
+  const scene=new THREE.Scene();
+  const cam=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,1000);
+  cam.position.set(0,0,5);
+
+  // === LARYNX WIREFRAME ===
+  // Main larynx body (thyroid cartilage shape)
+  const thyGeom=new THREE.CylinderGeometry(1.1,1,1.8,6,1,true);
+  const thyMat=new THREE.MeshBasicMaterial({color:0x8B5CF6,wireframe:true,transparent:true,opacity:.35});
+  const thy=new THREE.Mesh(thyGeom,thyMat);
+  scene.add(thy);
+
+  // Cricoid ring
+  const crcGeom=new THREE.TorusGeometry(.7,.08,8,24);
+  const crcMat=new THREE.MeshBasicMaterial({color:0x3B82F6,wireframe:false,transparent:true,opacity:.5});
+  const crc=new THREE.Mesh(crcGeom,crcMat);
+  crc.position.y=-1.15;
+  scene.add(crc);
+
+  // Trachea
+  const trach=new THREE.Mesh(
+    new THREE.CylinderGeometry(.35,.35,1.2,12,3,true),
+    new THREE.MeshBasicMaterial({color:0x3B82F6,wireframe:true,transparent:true,opacity:.25})
+  );
+  trach.position.y=-1.8;
+  scene.add(trach);
+
+  // Vocal folds (two ellipses)
+  const vfGeom=new THREE.TorusGeometry(.45,.04,6,20,Math.PI);
+  const vfMat=new THREE.MeshBasicMaterial({color:0xF59E0B,transparent:true,opacity:.8});
+  const vf1=new THREE.Mesh(vfGeom,vfMat);
+  vf1.position.y=-.2;vf1.rotation.x=-Math.PI/2;
+  scene.add(vf1);
+  const vf2=vf1.clone();
+  vf2.rotation.z=Math.PI;
+  scene.add(vf2);
+
+  // False vocal folds
+  const fvf=new THREE.Mesh(
+    new THREE.TorusGeometry(.55,.03,6,20,Math.PI*1.8),
+    new THREE.MeshBasicMaterial({color:0x10B981,transparent:true,opacity:.5})
+  );
+  fvf.position.y=.1;fvf.rotation.x=-Math.PI/2;
+  scene.add(fvf);
+
+  // SAE ring (top)
+  const sae=new THREE.Mesh(
+    new THREE.TorusGeometry(.8,.04,6,24),
+    new THREE.MeshBasicMaterial({color:0xEC4899,transparent:true,opacity:.6})
+  );
+  sae.position.y=.7;sae.rotation.x=Math.PI/2;
+  scene.add(sae);
+
+  // Arytenoid dots
+  [-0.3,0.3].forEach(x=>{
+    const a=new THREE.Mesh(
+      new THREE.SphereGeometry(.09,8,8),
+      new THREE.MeshBasicMaterial({color:0xF59E0B,transparent:true,opacity:.9})
+    );
+    a.position.set(x,-.2,-.4);
+    scene.add(a);
+  });
+
+  // Particle system
+  const pts=[];
+  for(let i=0;i<200;i++){
+    pts.push((Math.random()-.5)*20,(Math.random()-.5)*20,(Math.random()-.5)*20);
+  }
+  const ptGeom=new THREE.BufferGeometry();
+  ptGeom.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
+  const ptMesh=new THREE.Points(ptGeom,new THREE.PointsMaterial({color:0x8B5CF6,size:.06,transparent:true,opacity:.4}));
+  scene.add(ptMesh);
+
+  // Group
+  const group=new THREE.Group();
+  scene.children.forEach(c=>{if(c!==ptMesh)group.add(c)});
+  scene.add(group);group.position.y=.3;
+
+  // Mouse parallax
+  let mx=0,my=0;
+  document.addEventListener('mousemove',e=>{mx=(e.clientX/innerWidth-.5)*2;my=(e.clientY/innerHeight-.5)*2});
+
+  // Resize
+  window.addEventListener('resize',()=>{
+    cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+  });
+
+  let t=0;
+  function animate(){
+    requestAnimationFrame(animate);t+=.008;
+    group.rotation.y+=(.3*t*0.1-group.rotation.y+mx*.3)*.05;
+    group.rotation.x+=(-my*.15-group.rotation.x)*.05;
+    group.position.y=.3+Math.sin(t*.5)*.08;
+    ptMesh.rotation.y+=.001;
+    // Vocal fold oscillation
+    vf1.scale.x=1+Math.sin(t*8)*.05;
+    vf2.scale.x=1+Math.sin(t*8+Math.PI)*.05;
+    renderer.render(scene,cam);
+  }
+  animate();
+})();
+
+// ═══════════════════════════════════════════
+// COURSE DATA
+// ═══════════════════════════════════════════
+const L1=[
+  {id:'presentation',num:0,title:'Présentation',sub:'6 Qualités vocales',icon:'🎵',type:'found',
+   desc:"Tout le monde a une belle voix. Le modèle Estill enseigne le contrôle indépendant de chaque structure anatomique, indépendamment du style musical.",
+   anat:"PUISSANCE (Poumons) → SOURCE (Larynx/PV) → FILTRE (Conduit vocal). Ces 3 systèmes fonctionnent indépendamment.",
+   opts:[{k:'Speech',d:'Voix parlée naturelle — PV épais, THY vertical, SAE large'},{k:'Falsetto',d:'Registre léger — PV rigides, début aspiré, SAE large'},{k:'Sob',d:'Sanglot/classique — PV fins, THY basculé, larynx bas, ancrage'},{k:'Twang nasal',d:'Brillant nasal — SAE étroit, voile centré, larynx haut'},{k:'Twang oral',d:'Brillant oral — SAE étroit, voile haut, larynx haut'},{k:'Opera',d:'Lyrique — Sob + Twang + ancrage maximal, larynx bas'},{k:'Belt',d:'Intensité max — CRC basculé, THY vertical, larynx haut, ancrage'}],
+   exo:"Chantez « Joyeux anniversaire » dans 5 qualités différentes : Speech, Falsetto, Belt, Sob, Opera. Observez les changements dans votre larynx."
+  },
+  {id:'effort',num:1,title:"L'Effort",sub:'Cadran 1–10',icon:'⚙️',type:'found',
+   desc:"La base de tout le modèle Estill. Apprendre à LOCALISER l'effort dans le bon muscle, l'ÉVALUER sur 10, puis MAINTENIR ce niveau avec précision.",
+   anat:"Tout effort musculaire peut être évalué sur une échelle de 1 (contact léger) à 10 (effort maximum). Concentrer l'effort = isoler le muscle cible.",
+   opts:[{k:'0→10 (Cadran)',d:"Localiser + évaluer l'effort sur une échelle de 1 à 10."},{k:'Manœuvres de relaxation',d:"1) Respirez 2) Massez le visage 3) Marchez 4) Langue sur les dents."},{k:'Travail en silence',d:"Exécuter les figures sans voix pour éviter que le son masque la perception musculaire."}],
+   exo:"Pressez index et pouce ensemble. Évaluez l'effort sur 10. Maintenez. Faites les manœuvres de relaxation. Répétez avec les lèvres avancées (8-9/10)."
+  },
+  {id:'respiration',num:2,title:'Puissance respiratoire',sub:'Poumons · Diaphragme',icon:'💨',type:'found',
+   desc:"La respiration est la PUISSANCE du système vocal. Le larynx doit rester ouvert pour permettre la respiration, puis se referme pour protéger les poumons.",
+   anat:"Larynx → Trachée → Poumons → Diaphragme (surface sup.) → Côtes → Cavité abdominale. Respirer = fonction dynamique continue.",
+   opts:[{k:'Inspiration',d:"Le diaphragme descend → cavité thoracique s'agrandit → air entre."},{k:'Expiration',d:"Contrôle du débit d'air : clé de la puissance vocale."},{k:'Soutien diaphragmatique',d:"Maintenir la pression sous-glottique constante = stabilité du volume sonore."}],
+   exo:"Grande inspiration. Où se concentre l'effort ? Évaluez sur 10. Puis expirez lentement — où est l'effort maintenant ? Même endroit ?"
+  },
+  {id:'production',num:3,title:'Production vocale',sub:'Puissance · Source · Filtre',icon:'🔊',type:'found',
+   desc:"3 systèmes indépendants : PUISSANCE (souffle), SOURCE (plis vocaux), FILTRE (conduit vocal). Le modèle Estill permet de les contrôler séparément.",
+   anat:"Puissance → Volume/intensité, bruit du souffle. Source → Notes, harmoniques, bio-élasticité. Filtre → Voyelles, formants, résonance.",
+   opts:[{k:'Puissance',d:"Poumons + torse → aérodynamisme → débit et pression d'air."},{k:'Source',d:"Larynx + PV → bio-élasticité → fréquence et harmoniques."},{k:'Filtre',d:"Conduit vocal → forme et résonance → couleur sonore finale."}],
+   exo:"Chantez un son. Identifiez mentalement les 3 systèmes. Modifiez la puissance seule. Puis la source seule. Puis le filtre seul."
+  },
+  {id:'vpv1',num:4,title:'VPV · Début & Fin',sub:'Glottal · Aspiré · Simultané',icon:'✦',type:'larx',abbr:'VPV¹',
+   desc:"Les vrais plis vocaux (PV) coordonnent leur fermeture avec le début de l'expiration de 3 façons. Cette coordination détermine la texture d'attaque du son.",
+   anat:"Larynx vue supérieure : Cartilage thyroïde — Plis vocaux — Glotte — Cartilage cricoïde — Cartilages aryténoïdes. Muscles aryténoïdiens = ouverture/fermeture.",
+   opts:[{k:'Glottal',d:"PV fermés (1) AVANT le début de l'expiration (2). Attaque nette et percussive."},{k:'Aspiré',d:"L'expiration débute (1) AVANT que les PV ne se referment (2). Bref ou graduel. Attaque douce/soufflée."},{k:'Simultané',d:"L'expiration et la vibration des PV débutent EN MÊME TEMPS. Attaque équilibrée."}],
+   exo:"Dites « Oh-Oh ! » (glottal), « Ho Ho Ho » avec h aspiré anglais (aspiré), « Youhou ? » (simultané). Quelle différence dans le début du son ?"
+  },
+  {id:'fpv',num:5,title:'FPV · Faux Plis Vocaux',sub:'Contractés · Centrés · Rétractés',icon:'≋',type:'larx',abbr:'FPV',
+   desc:"Les faux plis vocaux (bandes ventriculaires) se trouvent AU-DESSUS des vrais PV. Leur position affecte le flux d'air et la qualité du son pendant la phonation.",
+   anat:"3 niveaux de fermeture laryngée : SAE (haut) → FPV (milieu) → PV (bas). Position centrée = Effort Vocal le Plus Confortable (EVPC).",
+   opts:[{k:'Contractés',d:"FPV fermés vers l'intérieur. Son tendu, serré. À éviter pour la santé vocale."},{k:'Centrés (EVPC)',d:"Position idéale pour chanter. FPV ni trop ouverts ni contractés. Effort optimal."},{k:'Rétractés ←→',d:"FPV complètement ouverts/tirés vers les côtés. Son libre, ouvert. Caractéristique du Twang."}],
+   exo:"Étirez-vous en levant les bras au-dessus de la tête. Que percevez-vous dans votre larynx ? Dans votre respiration ? C'est la contraction naturelle des FPV."
+  },
+  {id:'vpv2',num:6,title:'VPV · Corps & Couverture',sub:'Relâchés · Épais · Fins · Rigides',icon:'〜',type:'larx',abbr:'VPV²',
+   desc:"Les PV vibrent selon 4 modes différents selon la tension du corps (muscle TA) et de la couverture muqueuse. Chaque mode = une couleur sonore distincte.",
+   anat:"Corps = muscle thyro-aryténoïdien (TA). Couverture = muqueuse. L'ondulation muqueuse = propagation de bas en haut des PV. 4 configurations possibles.",
+   opts:[{k:'Relâchés (Fry)',d:"Corps ET couverture relâchés → grincement de porte, crépitement glottal. Registre de fry vocal."},{k:'Épais',d:"Voix modale/parlée. TA contracté, PV courts. Contact épais sur tout le cycle. Son riche dans le grave."},{k:'Fins',d:"TA relâché, CT étire les PV → allongés et fins. Son léger, délicat, clair. Caractéristique du Falsetto."},{k:'Rigides',d:"TA contracté + CT étire les PV → tension maximale. Son serré, strident. À contrôler avec soin."}],
+   exo:"Chantez une gamme complète. Sentez le passage entre PV épais (grave) et PV fins (aigu). C'est le passage de registre. Cherchez à le lisser."
+  },
+  {id:'thy',num:7,title:'Thyroïde · THY',sub:'Vertical · Basculé',icon:'▽',type:'larx',abbr:'THY',
+   desc:"Le cartilage thyroïde bascule vers le bas/avant pour étirer les PV, augmenter la tension et permettre les notes aiguës. Contrôlé par le muscle crico-thyroïdien (CT).",
+   anat:"Articulation crico-thyroïdienne. Bascule THY → espace crico-thyroïdien réduit à l'avant, élargi à l'arrière → PV s'allongent et s'amincissent.",
+   opts:[{k:'Vertical',d:"Position de repos/respiration. PV sans tension supplémentaire du CT."},{k:'Basculé ↓',d:"THY penché vers le bas et l'avant. PV allongés et effilés. Tessiture plus aiguë possible."}],
+   exo:"Miaulez doucement dans l'aigu comme un chaton, ou pleurnichez sur /ŋ/ (ng de camping). Placez un doigt sur votre larynx. Sentez la bascule du THY."
+  },
+  {id:'sirene',num:8,title:'La Sirène',sub:'Glissando · Exercice clé',icon:'〽️',type:'spe',
+   desc:"La sirène explore toute l'étendue vocale SANS coupure de registre. Elle combine plusieurs figures Estill et est l'exercice de référence du modèle.",
+   anat:"Recette optimale : PV fins + THY basculé + FPV rétractés ←→ + Langue haute + effort élevé + ancrage tête/cou sur les notes très aiguës.",
+   opts:[{k:'Sirène /ŋ/ ascendante',d:"Du plus grave au plus aigu possible sur /ŋ/ (ng). Sans coupure."},{k:'Sirène /ŋ/ descendante',d:"Du plus aigu au plus grave. Maintenir les configurations."},{k:'Mirène',d:"Mots + sirène = mirène. Chanter les paroles d'une chanson sur /ŋ/. Développe le contrôle indépendant des articulateurs."}],
+   exo:"Sur le son /ŋ/, faites une sirène du plus aigu au plus grave. Cherchez la continuité sans rupture. Mémorisez les sensations sur chaque note."
+  },
+  {id:'crc',num:9,title:'Cricoïde · CRC',sub:'Vertical · Basculé',icon:'○',type:'larx',abbr:'CRC',
+   desc:"Le cartilage cricoïde bascule pour augmenter la tension des PV par l'arrière via les aryténoïdes. Sa bascule est la signature spécifique du Belt.",
+   anat:"Même articulation crico-thyroïdienne que THY mais vue par l'arrière. CRC basculé → processus vocaux aryténoïdiens remontés → tension PV augmentée.",
+   opts:[{k:'Vertical',d:"Position de repos. Pas de tension supplémentaire par l'arrière des PV."},{k:'Basculé ↑',d:"CRC bascule vers le haut en arrière. Tension PV maximale. Caractéristique du Belt. Très exigeant."}],
+   exo:"Préparez-vous à crier « yé ! » pour encourager une équipe, SANS émettre de son et SANS retenir la respiration. Localisez l'effort dans le CRC."
+  },
+  {id:'eas',num:10,title:'Sphincter AE · SAE',sub:'Large · Étroit',icon:'◎',type:'larx',abbr:'SAE',
+   desc:"Le sphincter ary-épiglottique (SAE) est l'anneau musculaire au sommet du larynx. Son rétrécissement génère le 'formant du chanteur' (2–4 kHz = brillance).",
+   anat:"Situé entre l'épiglotte et les cartilages aryténoïdes. SAE étroit → resserrement du vestibule laryngé → énergie spectrale accrue 2–4 kHz. Étudié par Colton & Estill dès 1981.",
+   opts:[{k:'Large',d:"SAE ouvert. Son ample, rond, profond. Conduit vocal maximal."},{k:'Étroit',d:"SAE resserré. Son brillant, perçant, nasal-like. Twang/Opera. Formant du chanteur intensifié."}],
+   exo:"Imitez un canard (nasillard), un chat en colère (sifflement), ou un enfant qui fait une raillerie. Sentez le rétrécissement haut dans le larynx et la brillance."
+  },
+  {id:'larynx',num:11,title:'Larynx · Position',sub:'Bas · Centré · Haut',icon:'↕',type:'cond',
+   desc:"La position verticale du larynx dans le cou modifie la LONGUEUR du conduit vocal → modifie la couleur sonore globale indépendamment des notes.",
+   anat:"Larynx bas → conduit vocal allongé → spectre plus sombre (formants graves). Larynx haut → conduit raccourci → spectre plus brillant (formants aigus).",
+   opts:[{k:'Bas',d:"Conduit vocal allongé. Son profond, sombre, rond. Typique de Sob et Opera."},{k:'Centré',d:"Position neutre/équilibrée. Son 'naturel'. Base de Speech."},{k:'Haut',d:"Conduit vocal raccourci. Son brillant, nasal. Lié au Belt et certains Twang."}],
+   exo:"Bâillez exagérément (larynx bas). Parlez normalement (centré). Imitez une voix de bébé très aiguë (haut). Sentez les 3 positions différentes."
+  },
+  {id:'langue',num:12,title:'Langue',sub:'Basse · Centrée · Haute · Comprimée',icon:'〰',type:'cond',
+   desc:"La langue est la structure la plus mobile du conduit vocal. Sa position modifie les formants F1 et F2 → les voyelles et la couleur sonore de façon continue.",
+   anat:"Haute → espace réduit dans la bouche → voyelles antérieures claires /i, e/. Basse → espace large → voyelles ouvertes /a/. Comprimée = option avancée (étroite latéralement).",
+   opts:[{k:'Basse',d:"Langue aplatie. Son ouvert, large. Voyelles /a, ɑ/."},{k:'Centrée',d:"Position neutre. Équilibre acoustique naturel."},{k:'Haute',d:"Langue relevée vers le palais. Son brillant, serré. Voyelles /i, e/."},{k:'Comprimée *',d:"Option avancée : langue comprimée latéralement. Modifie les formants de façon unique."}],
+   exo:"Chantez /a/ (langue basse) puis /i/ (langue haute) en alternant sur la même note. Comparez le timbre. Puis chantez une gamme sur /i/ en maintenant la langue haute."
+  },
+  {id:'voile',num:13,title:'Voile du palais',sub:'Bas · Centré · Haut',icon:'⌢',type:'cond',
+   desc:"Le voile du palais (palais mou) ouvre ou ferme le passage vers les fosses nasales. Sa position contrôle la nasalité et la résonance du conduit vocal.",
+   anat:"Voile haut → passage naso-pharyngé fermé → son non-nasal (Speech, Belt, Twang oral). Voile bas → passage ouvert → résonance nasale (Twang nasal, /n/, /m/, /ŋ/).",
+   opts:[{k:'Bas',d:"Passage naso-pharyngé ouvert. Résonance nasale. Consonnes /n, m, ŋ/ et Twang nasal."},{k:'Centré',d:"Position intermédiaire. Léger voile nasal."},{k:'Haut',d:"Passage fermé. Son oral pur. Speech, Twang oral, Opera, Belt."}],
+   exo:"Pincez votre nez et chantez /a/. Si le son change beaucoup, votre voile est BAS. Puis relevez le voile (imaginez un bâillement silencieux) et pincez à nouveau : le son ne doit pas changer."
+  },
+  {id:'machoire',num:14,title:'Mâchoire',sub:'Relâchée · Avancée',icon:'⌦',type:'cond',
+   desc:"La mâchoire détermine l'ouverture buccale et l'espace dans le conduit vocal. La tension des masséters est une source fréquente de constriction vocale.",
+   anat:"Mâchoire ouverte → espace accru → voyelles plus ouvertes, plus de liberté vocale. Mâchoire avancée → modification de l'articulation et des formants de certaines voyelles.",
+   opts:[{k:'Relâchée/Ouverte (R)',d:"Mâchoire naturellement abaissée. Espace maximal. Position de repos confortable."},{k:'Avancée (A)',d:"Mâchoire légèrement projetée vers l'avant. Modifie les voyelles postérieures et l'espace articulatoire."}],
+   exo:"Imaginez une pomme recouverte de caramel. Vos dents s'enfoncent partiellement et restent collées. Essayez de retirer vos dents SANS bouger votre mâchoire inférieure."
+  },
+  {id:'levres',num:15,title:'Lèvres',sub:'Relâchées · Centrées · Avancées',icon:'⊙',type:'cond',
+   desc:"Les lèvres ajustent l'ouverture finale du conduit vocal, modifiant les formants aigus (F3, F4) et la couleur timbrale des voyelles.",
+   anat:"Lèvres avancées/arrondies → conduit vocal allongé → son plus grave et sombre (/o, u/). Lèvres rétractées/étirées → conduit raccourci → son plus brillant (/i/).",
+   opts:[{k:'Relâchées/Étirées',d:"Lèvres détendues ou légèrement étirées (sourire). Son plutôt brillant."},{k:'Centrées',d:"Position neutre. Pas de modification significative."},{k:'Avancées ◯',d:"Lèvres arrondies et projetées vers l'avant (comme pour /ou/). Son plus sombre, chaud et arrondi."}],
+   exo:"Avancez vos lèvres au maximum (effort 8-9/10). Maintenez cette position. Faites les manœuvres de relaxation SANS relâcher la position. Puis ajoutez la voix sur /ou/."
+  },
+  {id:'tete_cou',num:16,title:'Tête & Cou',sub:'Relaxé · Ancré',icon:'↑',type:'anc',
+   desc:"L'ancrage de la tête et du cou active les muscles extrinsèques du larynx pour ajouter de l'INTENSITÉ (pas du volume) à la voix sans pousser le souffle.",
+   anat:"Muscles sterno-cléido-mastoïdiens, sus-hyoïdiens, sous-hyoïdiens. L'ancrage stabilise la position du larynx et augmente l'énergie spectrale perçue.",
+   opts:[{k:'Relaxé (R)',d:"Muscles du cou décontractés. Position de repos confortable. Son 'naturel'."},{k:'Ancré (A)',d:"Muscles du cou et de la nuque activés et stabilisés. Son plus intense, plus ancré, plus présent."}],
+   exo:"Chantez /i/ avec PV fins + FPV rétractés, puis ANCREZ soudainement la tête et le cou. Notez l'augmentation d'intensité sans effort glottique supplémentaire."
+  },
+  {id:'torse',num:17,title:'Torse',sub:'Relaxé · Ancré',icon:'⬛',type:'anc',
+   desc:"L'ancrage du torse active les muscles pectoraux et dorsaux pour stabiliser la cage thoracique. Il ajoute de l'intensité et protège les PV des excès de pression.",
+   anat:"Muscles grands pectoraux + grand dorsal. Ancrage ≠ bloquer la respiration — les deux sont COMPATIBLES. Épaules légèrement abaissées, sternum légèrement surélevé.",
+   opts:[{k:'Relaxé (R)',d:"Posture normale debout/assis, confortable et non affaissée."},{k:'Ancré (A)',d:"Pectoraux et dorsaux actifs. Posture de chanteur d'opéra ou de Superman. Ancrage ≠ rigidité."}],
+   exo:"Imaginez des ballons légèrement dégonflés sous vos aisselles. Pressez-les avec vos bras sans rapprocher les omoplates. Sentez l'activation dans la poitrine et le dos."
+  }
+];
+
+const L2=[
+  {id:'speech',title:'Speech',sub:'Mode 1 · Voix parlée',color:'#3B82F6',
+   desc:"Qualité vocale naturelle de la parole et du chant populaire/folk. Son présent, facilement audible dans le grave. Pente spectrale négative.",
+   acoustic:"Spectre : pente négative dans les partiels supérieurs. Fondamentale dominante. Son clair, présent, naturel.",
+   recipe:{vpv1:'Glottal',fpv:'Centrés',vpv2:'Épais',thy:'Vertical',crc:'Vertical',sae:'Large',larynx:'Centré',langue:'Centrée',voile:'Haut',machoire:'Centrée',levres:'Centrées',tete:'Relaxés',torse:'Relaxé'},
+   risk:"Ne JAMAIS pousser le souffle sous les PV pour augmenter l'intensité → risque de lésions. La FPV rétraction n'est pas dans la recette de base mais protège si l'effort monte.",
+   exo:"Chantez 'Joyeux anniversaire' sur /i/ avec PV épais + début glottal. Gardez l'effort concentré dans le larynx. Montez et descendez la gamme en maintenant la recette.",
+   refs:[
+     {a:'Amy Winehouse',t:'"Back to Black" — Speech pur, PV épais, aucune brillance forcée, conduit vocal détendu'},
+     {a:'Norah Jones',t:'"Come Away with Me" — Speech naturel, attracteurs non modifiés, grave dominant'},
+     {a:'Bob Dylan',t:'"Blowin\' in the Wind" — Speech brut, effort minimal, pas de SAE étroit'},
+     {a:'Adele',t:'"Someone Like You" (couplets) — Speech avant le passage Belt sur les refrains'}
+   ]
+  },
+  {id:'falsetto',title:'Falsetto',sub:'Mode léger · Registre de tête',color:'#8B5CF6',
+   desc:"Qualité légère et aérienne, naturelle dans le registre aigu. PV rigides (TA + CT en tension simultanée) avec début aspiré. Son doux, parfois soufflé.",
+   acoustic:"Partiels supérieurs renforcés. Son clair, léger, aérien. Énergie réduite dans les graves. Fondamentale parfois manquante (FPV centrés sans rétraction).",
+   recipe:{vpv1:'Aspiré',fpv:'Centrés',vpv2:'Rigides',thy:'Vertical',crc:'Vertical',sae:'Large',larynx:'Centré',langue:'Centrée',voile:'Haut',machoire:'Centrée',levres:'Centrées',tete:'Relaxés',torse:'Relaxé'},
+   risk:"Ne pas confondre PV rigides (TA + CT tendus) et PV fins (TA relâché, CT seul). Début aspiré facilite l'entrée en Falsetto. FPV centrés : ne pas les contracter sous l'effort.",
+   exo:"Dans le registre aigu, produisez une note en Falsetto (début aspiré). Descendez vers le grave en maintenant le Falsetto jusqu'aux notes les plus basses. Notez que le son s'affaiblit progressivement.",
+   refs:[
+     {a:'Jeff Buckley',t:'"Hallelujah" — Falsetto pur dans le refrain, PV rigides clairement audibles'},
+     {a:'Prince',t:'"Kiss" — Falsetto puissant avec SAE légèrement étroit (variante)'},
+     {a:'Bee Gees',t:'"Stayin\' Alive" — Falsetto classique pop, début aspiré caractéristique'},
+     {a:'Jonsi (Sigur Rós)',t:'"Hoppípolla" — Falsetto éthéré, conduit vocal ample, SAE large'}
+   ]
+  },
+  {id:'sob',title:'Sob',sub:'Mode 2 · Sanglot · Classique',color:'#06B6D4',
+   desc:"Qualité caractéristique du pleur, de la berceuse, du chant classique art song. Son sombre et doux. Larynx bas + THY basculé + FPV rétractés + ancrage total.",
+   acoustic:"Conduit vocal long (larynx bas) + SAE large → formants graves dominants. Son enveloppant, sombre, intimiste. Fond spectral riche en graves.",
+   recipe:{vpv1:'Simultané',fpv:'Rétractés',vpv2:'Fins',thy:'Basculé',crc:'Vertical',sae:'Large',larynx:'Bas',langue:'Haute',voile:'Haut',machoire:'Centrée',levres:'Centrées',tete:'Ancrés',torse:'Ancré'},
+   risk:"En montant dans l'aigu, les PV tendent à s'épaissir et l'effort augmente. Maintenir PV fins + FPV rétractés + larynx bas malgré la montée. Rétraction FPV = protection vocale indispensable.",
+   exo:"Imitez silencieusement un sanglot ou un rire intense (même configurations). Ancrez tête/cou/torse. Basculez THY. Rétractez les FPV. Ajoutez la voix sur /ŋ/ — le son reste doux et sombre même dans l'aigu.",
+   refs:[
+     {a:'Matthias Goerne',t:'Schubert "Der Erlkönig" — Sob art song classique, larynx bas + ancrage constants'},
+     {a:'Renée Fleming',t:'"O Mio Babbino Caro" (Puccini) — Sob dans le grave avant le passage Opera dans l\'aigu'},
+     {a:'Leonard Cohen',t:'"Hallelujah" — Sob parlé, larynx bas, conduit long, ancrage torse perceptible'},
+     {a:'Nina Simone',t:'"Feeling Good" (intro) — Sob grave, THY basculé, FPV rétractés, couleur sombre'}
+   ]
+  },
+  {id:'twang_nasal',title:'Twang Nasal',sub:'Mode 3 · Nasal · Brillant',color:'#F59E0B',
+   desc:"Qualité brillante et perçante avec résonance nasale partielle. SAE étroit + voile CENTRÉ (passage naso-pharyngé partiellement ouvert = nasalité). Larynx haut + THY basculé.",
+   acoustic:"Forte énergie spectrale 2–4 kHz (formant du chanteur). Son nasal, brillant, perçant. Test : pincer le nez = le son change → nasalité confirmée.",
+   recipe:{vpv1:'Simultané',fpv:'Rétractés',vpv2:'Fins',thy:'Basculé',crc:'Vertical',sae:'Étroit',larynx:'Haut',langue:'Haute',voile:'Centré',machoire:'Centrée',levres:'Centrées',tete:'Relaxés',torse:'Relaxé'},
+   risk:"FPV rétractés OBLIGATOIRES avant SAE étroit — sinon constriction vocale. Ne pas confondre avec Twang oral : la seule différence est voile CENTRÉ (nasal) vs voile HAUT (oral).",
+   exo:"Émettez le son /ŋ/ avec énergie. Passez à /i/ nasalisé en maintenant les côtés de la langue sur les molaires supérieures. Resserrez le SAE. Maintenez la nasalité sur toutes les voyelles.",
+   refs:[
+     {a:'Dolly Parton',t:'"Jolene" — Twang nasal country classique, voile centré très audible'},
+     {a:'Edith Piaf',t:'"La Vie en Rose" — Twang nasal FR, SAE étroit + nasalité caractéristique'},
+     {a:'Reba McEntire',t:'"Fancy" — Twang nasal intense, larynx haut, SAE très étroit'},
+     {a:'Willie Nelson',t:'"On the Road Again" — Twang nasal doux, voile centré, vibrato naturel'}
+   ]
+  },
+  {id:'twang_oral',title:'Twang Oral',sub:'Country · Pop · Musical · Non nasal',color:'#F97316',
+   desc:"Qualité brillante NON nasale. Identique au Twang nasal SAUF : voile HAUT (passage naso-pharyngé fermé). SAE étroit + larynx haut + THY basculé. Country, pop, musical.",
+   acoustic:"Forte énergie 2–4 kHz (formant du chanteur). Son brillant, projeté, oral pur. Test : pincer le nez = le son ne change PAS → voile bien haut confirmé.",
+   recipe:{vpv1:'Simultané',fpv:'Rétractés',vpv2:'Fins',thy:'Basculé',crc:'Vertical',sae:'Étroit',larynx:'Haut',langue:'Haute',voile:'Haut',machoire:'Centrée',levres:'Centrées',tete:'Relaxés',torse:'Relaxé'},
+   risk:"Test diagnostic obligatoire : pincez le nez. Son change → voile centré → Twang nasal. Son inchangé → voile haut → Twang oral ✓. Relevez progressivement le voile depuis le Twang nasal.",
+   exo:"Depuis le Twang nasal (/ŋ/ → /i/ nasalisé + SAE étroit), relevez RAPIDEMENT le voile du palais. La brillance reste, la nasalité disparaît. Vérifiez avec le test du nez sur toutes les voyelles.",
+   refs:[
+     {a:'Idina Menzel',t:'"Defying Gravity" — Twang oral musical theatre, voile haut, SAE étroit, brillance projetée'},
+     {a:'Ariana Grande',t:'"Problem" (refrain) — Twang oral pop, larynx haut, SAE étroit, pas de nasalité'},
+     {a:'Taylor Swift',t:'"Shake It Off" — Twang oral country-pop, voile haut clairement oral'},
+     {a:'Céline Dion',t:'"Pour que tu m\'aimes encore" (refrains médiums) — Twang oral avant les peaks Belt'}
+   ]
+  },
+  {id:'opera',title:'Opera',sub:'Mode 4 · Lyrique · Classique',color:'#DC2626',
+   desc:"Combinaison Sob + Twang : larynx bas (conduit long) + THY basculé + SAE étroit + ancrage maximal + langue haute. PV fins ou épais selon le registre. Projection maximale par le formant du chanteur.",
+   acoustic:"Formant du chanteur (2–4 kHz) + conduit long (larynx bas) → son profond ET projeté. Vibrato naturel. Inversion spectrale caractéristique du chant lyrique en salle.",
+   recipe:{vpv1:'Simultané',fpv:'Rétractés',vpv2:'Fins ou Épais',thy:'Basculé',crc:'Vertical',sae:'Étroit',larynx:'Bas',langue:'Haute / Comprimée*',voile:'Haut',machoire:'Centrée',levres:'Centrées',tete:'Ancrés',torse:'Ancré'},
+   risk:"Passage de registre difficile vers l'aigu (mi/fa pour les sopranos). Maintenir larynx bas + SAE étroit sur toute la tessiture. * Langue comprimée = option avancée qui modifie l'espace de résonance.",
+   exo:"7 étapes : /ŋ/ fins + THY basculé + FPV rétractés → voile haut + /i/ nasalisé → SAE étroit → voile haut (oral) → ancrage torse + tête/cou → larynx bas. Faites-les séparément puis ensemble.",
+   refs:[
+     {a:'Maria Callas',t:'"Casta Diva" (Bellini) — Opera pur, formant du chanteur + larynx bas constants'},
+     {a:'Luciano Pavarotti',t:'"Nessun Dorma" — Opera avec PV épais dans le grave → fins dans le contre-ut'},
+     {a:'Cecilia Bartoli',t:'"Una Voce Poco Fa" — Opera mezzo, articulation claire + SAE étroit bien perceptible'},
+     {a:'Jonas Kaufmann',t:'"Winterreise" (Schubert) — Opera → Sob transitions, changement de SAE audible'}
+   ]
+  },
+  {id:'belt',title:'Belt',sub:'Intensité max · Broadway · Pop puissante',color:'#EF4444',
+   desc:"Qualité la plus intense. THY vertical + CRC basculé + SAE étroit + larynx haut + langue haute + ancrage total + PV épais. Belt ≠ Speech forcé dans l'aigu — recette distincte.",
+   acoustic:"Fondamentale forte (PV épais) + formant du chanteur (SAE étroit) + conduit court (larynx haut) → son direct, percutant, puissant. Énergie spectrale maximale.",
+   recipe:{vpv1:'Simultané ou Glottal',fpv:'Rétractés',vpv2:'Épais',thy:'Vertical',crc:'Basculé',sae:'Étroit',larynx:'Haut',langue:'Haute',voile:'Haut',machoire:'Centrée',levres:'Centrées',tete:'Ancrés',torse:'Ancré'},
+   risk:"⚠️ Belt ≠ Speech poussé dans l'aigu (erreur fréquente → lésions). 3 différences clés Speech vs Belt : Langue haute + CRC basculé + SAE étroit. NE JAMAIS pousser le souffle — ancrage torse = protection.",
+   exo:"Criez 'yé !' (début simultané) ou 'Oh !' glottal. Identifiez : CRC basculé + langue haute + SAE étroit + larynx haut + ancrage torse. Maintenez TOUTES ces configurations quand vous ajoutez la voix.",
+   refs:[
+     {a:'Ethel Merman',t:'"Everything\'s Coming Up Roses" — Belt archetypal Broadway, CRC basculé maximal'},
+     {a:'Jennifer Hudson',t:'"And I Am Telling You" — Belt Soul intense, ancrage torse clairement perceptible'},
+     {a:'Whitney Houston',t:'"I Will Always Love You" (climax) — Belt pur, PV épais + CRC basculé, larynx haut'},
+     {a:'Adele',t:'"Rolling in the Deep" (refrain) — Belt contemporain, Twang oral → Belt sur les pics'}
+   ]
+  }
+];
+
+// ═══════════════════════════════════════════
+// PROGRESS TRACKING
+// ═══════════════════════════════════════════
+const TOTAL=L1.length+L2.length;
+function getProgress(){
+  try{return JSON.parse(localStorage.getItem('evt-progress')||'{}')}catch{return{}}
+}
+function setDone(id,done){
+  const p=getProgress();
+  if(done)p[id]=1;else delete p[id];
+  localStorage.setItem('evt-progress',JSON.stringify(p));
+  updateProgress();
+}
+function isDone(id){return!!getProgress()[id]}
+function updateProgress(){
+  const p=getProgress();
+  const count=Object.keys(p).length;
+  const pct=Math.round(count/TOTAL*100);
+  document.getElementById('prog-bar').style.width=pct+'%';
+  document.getElementById('prog-label').textContent=count+'/'+TOTAL+' complété';
+}
+
+// ═══════════════════════════════════════════
+// TYPE → COLOR MAP
+// ═══════════════════════════════════════════
+const typeColor={
+  found:'var(--found)',
+  larx:'var(--larx)',
+  cond:'var(--cond)',
+  anc:'var(--anc)',
+  spe:'var(--spe)'
+};
+const typeClass={found:'bg-found',larx:'bg-larx',cond:'bg-cond',anc:'bg-anc',spe:'bg-spe'};
+
+// ═══════════════════════════════════════════
+// RENDER L1 GRID
+// ═══════════════════════════════════════════
+function renderL1(){
+  const grid=document.getElementById('l1-grid');
+  grid.innerHTML='';
+  L1.forEach(m=>{
+    const done=isDone(m.id);
+    const col=typeColor[m.type]||'var(--found)';
+    const optsBack=m.opts.map(o=>
+      `<div class="back-opt"><strong>${o.k}</strong><p>${o.d}</p></div>`
+    ).join('');
+    const optsfront=m.opts.map(o=>`<span class="opt-pill">${o.k}</span>`).join('');
+
+    const html=`
+    <div class="card-wrap${done?' flipped':''}" id="cw-${m.id}" onclick="flipCard('${m.id}')">
+      <div class="card-inner">
+        <!-- FRONT -->
+        <div class="card-face card-front">
+          <div class="card-type-bar" style="background:${col}"></div>
+          <div class="card-num">N1 · ${String(m.num).padStart(2,'0')}${m.abbr?' · '+m.abbr:''}</div>
+          <div class="card-icon">${m.icon}</div>
+          <div class="card-title">${m.title}</div>
+          <div class="card-sub" style="color:${col}">${m.sub}</div>
+          <div class="card-opts">${optsfront}</div>
+          <div class="flip-hint" style="margin-top:auto;padding-top:10px">↻ Cliquez pour les détails</div>
+          <div class="card-check${done?' done':''}">✓</div>
+        </div>
+        <!-- BACK -->
+        <div class="card-face card-back">
+          <div class="card-type-bar" style="background:${col}"></div>
+          <div style="margin-bottom:12px">
+            <span style="font-size:12px;font-weight:700;color:${col}">${m.icon} ${m.title} — ${m.sub}</span>
+          </div>
+          <div class="back-section">
+            <div class="back-label">Description</div>
+            <div class="back-text">${m.desc}</div>
+          </div>
+          <div class="back-section">
+            <div class="back-label">Anatomie & physiologie</div>
+            <div class="back-text">${m.anat}</div>
+          </div>
+          <div class="back-section">
+            <div class="back-label">Options & configurations</div>
+            <div class="back-options">${optsBack}</div>
+          </div>
+          <div class="back-section">
+            <div class="back-label">Exercice</div>
+            <div class="back-exo">${m.exo}</div>
+          </div>
+          <button class="complete-btn${done?' done-btn':''}" onclick="event.stopPropagation();markDone('${m.id}',this)">
+            ${done?'✓ Module complété':'✓ Marquer comme complété'}
+          </button>
+          <div class="flip-hint" style="margin-top:8px">↻ Cliquez pour revenir</div>
+        </div>
+      </div>
+    </div>`;
+    const div=document.createElement('div');
+    div.innerHTML=html;
+    grid.appendChild(div.firstElementChild);
+  });
+}
+
+// ═══════════════════════════════════════════
+// RENDER L2 GRID
+// ═══════════════════════════════════════════
+const recipeLabels={
+  vpv1:'VPV¹ Début',fpv:'FPV',vpv2:'VPV² Corps',
+  thy:'THY',crc:'CRC',sae:'SAE',
+  larynx:'Larynx',langue:'Langue',voile:'Voile',
+  machoire:'Mâchoire',levres:'Lèvres',tete:'Tête/Cou',torse:'Torse'
+};
+const recipeColors={
+  vpv1:'rgba(168,85,247',fpv:'rgba(16,185,129',vpv2:'rgba(168,85,247',
+  thy:'rgba(168,85,247',crc:'rgba(14,165,233',sae:'rgba(236,72,153',
+  larynx:'rgba(14,165,233',langue:'rgba(16,185,129',voile:'rgba(16,185,129',
+  machoire:'rgba(16,185,129',levres:'rgba(16,185,129',tete:'rgba(236,72,153',torse:'rgba(236,72,153'
+};
+
+function renderL2(){
+  const grid=document.getElementById('l2-grid');
+  grid.innerHTML='';
+  L2.forEach(q=>{
+    const done=isDone('l2-'+q.id);
+    const recipePills=Object.entries(q.recipe).map(([k,v])=>{
+      const rc=recipeColors[k]||'rgba(255,255,255';
+      return `<span class="r-pill" style="color:${rc},.9);background:${rc},.12);border-color:${rc},.3)">${recipeLabels[k]}: <strong>${v}</strong></span>`;
+    }).join('');
+
+    const refsPills=q.refs?q.refs.map(r=>`
+      <div style="padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);margin-bottom:6px">
+        <span style="font-size:11px;font-weight:700;color:${q.color}">${r.a}</span>
+        <span style="font-size:11px;color:var(--dim)"> — ${r.t}</span>
+      </div>`).join(''):'';
+
+    const html=`
+    <div class="q-card" id="qc-${q.id}" onclick="toggleQuality('${q.id}')">
+      <div style="position:absolute;top:0;left:0;right:0;height:4px;border-radius:16px 16px 0 0;background:${q.color}"></div>
+      <div class="q-name" style="color:${q.color}">${q.title}</div>
+      <div class="q-sub">${q.sub}</div>
+      <div class="q-desc">${q.desc}</div>
+      <div class="q-acoustic">🔊 Acoustique : ${q.acoustic}</div>
+      <div class="expand-toggle" style="color:${q.color}">Voir la recette complète + exercice</div>
+      <div class="q-detail">
+        <div class="q-recipe-title">La Recette — Configurations Niveau 1</div>
+        <div class="q-recipe">${recipePills}</div>
+        ${q.risk?`<div class="q-risk">⚠️ ${q.risk}</div>`:''}
+        <div class="q-exo">🎯 ${q.exo}</div>
+        ${refsPills?`<div style="margin-top:14px"><div class="q-recipe-title" style="margin-bottom:8px">🎧 Références à écouter</div>${refsPills}</div>`:''}
+        <button class="complete-btn${done?' done-btn':''}" style="margin-top:12px" onclick="event.stopPropagation();markDone('l2-${q.id}',this)">
+          ${done?'✓ Module complété':'✓ Marquer comme complété'}
+        </button>
+      </div>
+    </div>`;
+    const div=document.createElement('div');
+    div.innerHTML=html;
+    grid.appendChild(div.firstElementChild);
+  });
+}
+
+// ═══════════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════════
+const flipped=new Set();
+function flipCard(id){
+  const el=document.getElementById('cw-'+id);
+  if(!el)return;
+  const inner=el.querySelector('.card-inner');
+  const back=el.querySelector('.card-back');
+  if(flipped.has(id)){
+    flipped.delete(id);
+    el.classList.remove('flipped');
+    el.style.minHeight='220px';
+    inner.style.minHeight='220px';
+  } else {
+    flipped.add(id);
+    el.classList.add('flipped');
+    const h=Math.max(back.scrollHeight,240)+'px';
+    el.style.minHeight=h;
+    inner.style.minHeight=h;
+  }
+}
+function toggleQuality(id){
+  const el=document.getElementById('qc-'+id);
+  if(!el)return;
+  el.classList.toggle('open');
+}
+function markDone(id,btn){
+  const already=isDone(id);
+  setDone(id,!already);
+  btn.textContent=(!already)?'✓ Module complété':'✓ Marquer comme complété';
+  btn.classList.toggle('done-btn',!already);
+  // also update front card check if L1
+  if(!id.startsWith('l2-')){
+    const cw=document.getElementById('cw-'+id);
+    const check=cw?.querySelector('.card-check');
+    if(check)check.classList.toggle('done',!already);
+  }
+}
+function scrollSection(id){document.getElementById(id).scrollIntoView({behavior:'smooth'})}
+
+// ═══════════════════════════════════════════
+// NAV ACTIVE STATE ON SCROLL
+// ═══════════════════════════════════════════
+function updateNav(){
+  const secs=['hero','level1','anatomie','lab3d','genre-decoder','level2'];
+  const navBtns=document.querySelectorAll('.nav-btn');
+  let current=0;
+  secs.forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(el&&el.getBoundingClientRect().top<=80)current=i;
+  });
+  navBtns.forEach((b,i)=>b.classList.toggle('active',i===current));
+}
+window.addEventListener('scroll',updateNav,{passive:true});
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+renderL1();
+renderL2();
+updateProgress();
+
+// ═══════════════════════════════════════════
+// GENRE DECODER
+// ═══════════════════════════════════════════
+(function initGenreDecoder(){
+
+var QNAMES = {
+  speech:'Speech',falsetto:'Falsetto',sob:'Sob',
+  twang_nasal:'Twang nasal',twang_oral:'Twang oral',opera:'Opéra',belt:'Belt'
+};
+
+var QCOLORS = {
+  speech:'#F59E0B',falsetto:'#8B5CF6',sob:'#22D3EE',
+  twang_nasal:'#FCD34D',twang_oral:'#FB923C',opera:'#F87171',belt:'#EF4444'
+};
+
+var GENRES = [
+  {
+    id:'jazz', name:'Jazz', color:'#60A5FA', icon:'🎷',
+    tagline:'La voix qui « parle »',
+    couplet:'speech', refrain:'sob',
+    anatomy:{
+      'THY':'Vertical → légère bascule',
+      'CRC':'Vertical (stable)',
+      'VPV²':'Épais → plus fins (notes blue)',
+      'FPV':'Rétractés (son ouvert)',
+      'SAE':'Large (pas de formant)',
+      'Larynx':'Centré → descend sur les notes blues'
+    },
+    signature:'SAE large = timbre intime et rond, sans percée métallique. Le glissando jazz = THY qui bascule progressivement sur une note bleue (mi bémol sur un accord de ré majeur).',
+    tip:'La « note bleue » : chante un Sol droit, puis laisse le THY basculer légèrement → tu obtiens le son jazzy sans forcer.',
+    refs:['Ella Fitzgerald','Billie Holiday','Nina Simone','Chet Baker (trompette→ voix)']
+  },
+  {
+    id:'soul', name:'Soul / R&B', color:'#EF4444', icon:'🔥',
+    tagline:'Speech puissant → Belt en pics',
+    couplet:'speech', refrain:'belt',
+    anatomy:{
+      'THY':'Vertical (ancrage)',
+      'CRC':'Vertical → bascule marquée au refrain',
+      'VPV²':'Épais — contact fort, vibration complète',
+      'FPV':'Partiellement rétractés',
+      'SAE':'Modéré → étroit sur les ornements',
+      'Larynx':'Centré → monte légèrement en intensité'
+    },
+    signature:'L\'ornement soul (riff) = micro-variations rapides de CRC + SAE qui s\'ouvre/ferme alternativement. Le "melisma" est une séquence éclair de configurations Estill.',
+    tip:'Pour un riff soul : commence en Belt, détends le SAE rapidement sur chaque note → effet perlé caractéristique.',
+    refs:['Aretha Franklin','Whitney Houston','Marvin Gaye','Beyoncé','Adele']
+  },
+  {
+    id:'pop', name:'Pop', color:'#A78BFA', icon:'⭐',
+    tagline:'Twang oral + Belt au climax',
+    couplet:'speech', refrain:'twang_oral',
+    anatomy:{
+      'THY':'Légère bascule (brillance)',
+      'CRC':'Légère bascule Twang',
+      'VPV²':'Fins à moyens — son clair',
+      'FPV':'Partiellement rétractés',
+      'SAE':'Modéré (formant partiel)',
+      'Larynx':'Légèrement haut (percée de mix)'
+    },
+    signature:'Le son pop FR/UK/US actuel = Twang oral modéré + larynx légèrement haut = brillance sans métal excessif. Le Bridge monte souvent en Belt complet.',
+    tip:'Pour le son pop actuel : chante en Speech, puis monte le larynx très légèrement et rentre le SAE → tu entends immédiatement le son "radio".',
+    refs:['Ariana Grande','Harry Styles','Olivia Rodrigo','Angèle','Louane']
+  },
+  {
+    id:'musical', name:'Comédie musicale', color:'#F59E0B', icon:'🎭',
+    tagline:'Twang oral dominant — projection maximale',
+    couplet:'twang_oral', refrain:'belt',
+    anatomy:{
+      'THY':'Bascule modérée',
+      'CRC':'Bascule Twang constante',
+      'VPV²':'Moyens — projection + legato',
+      'FPV':'Partiellement centrés (soutien)',
+      'SAE':'Étroit (percée de salle)',
+      'Larynx':'Haut — projection vers le fond de salle'
+    },
+    signature:'SAE étroit + larynx haut = formant du chanteur activé → perce l\'orchestre sans micro. Technique pré-amplification, développée pour remplir de grandes salles.',
+    tip:'Imagine que tu veux être entendu au dernier rang sans micro : monte le larynx, rétrécis le SAE → tu découvres automatiquement le Twang de Broadway.',
+    refs:['Idina Menzel','Audra McDonald','Sutton Foster','Garou','Florent Mothe']
+  },
+  {
+    id:'opera', name:'Opéra', color:'#DC2626', icon:'🎼',
+    tagline:'Formant du chanteur maximal, permanent',
+    couplet:'opera', refrain:'opera',
+    anatomy:{
+      'THY':'Forte bascule (CT activé)',
+      'CRC':'Vertical (soutien registre)',
+      'VPV²':'Moyens-fins — vibrato large',
+      'FPV':'Rétractés — ouverture maximale',
+      'SAE':'Très étroit (formant 2-4kHz maximal)',
+      'Larynx':'Très bas — espace pharyngé maximal'
+    },
+    signature:'Larynx bas + SAE très étroit = deux résonateurs qui coopèrent : grave amplifié + formant du chanteur = 100dB sans micro, sur 40 ans de carrière.',
+    tip:'Bâille légèrement tout en chantant → le larynx descend automatiquement. Ajoute une légère constriction aryténoïdienne → le formant apparaît.',
+    refs:['Pavarotti','Maria Callas','Renée Fleming','Roberto Alagna','Natalie Dessay']
+  },
+  {
+    id:'country', name:'Country', color:'#10B981', icon:'🤠',
+    tagline:'Twang nasal + notes pleureuses (Sob mix)',
+    couplet:'twang_nasal', refrain:'twang_oral',
+    anatomy:{
+      'THY':'Bascule modérée (notes pleureuses)',
+      'CRC':'Légère bascule Twang',
+      'VPV²':'Moyens — son nasillard contrôlé',
+      'FPV':'Partiellement centrés',
+      'SAE':'Modéré-étroit (couleur nasale)',
+      'Larynx':'Légèrement haut'
+    },
+    signature:'Twang nasal = résonance nasopharyngée accentuée. Le "cry" country = Sob + Twang simultanément : THY bascule (Sob) + SAE étroit (Twang) → son pleurnicheur caractéristique.',
+    tip:'Pour le "cry" country : pleure une note (THY bascule = Sob) tout en gardant un peu de nasalité → tu obtiens l\'effet nasal-pleureur de Nashville.',
+    refs:['Dolly Parton','Johnny Cash','Carrie Underwood','Luke Combs','Shania Twain']
+  },
+  {
+    id:'chanson_fr', name:'Chanson française', color:'#EC4899', icon:'🥀',
+    tagline:'Parlé-chanté (Speech) + Twang nasal sur les pics',
+    couplet:'speech', refrain:'twang_nasal',
+    anatomy:{
+      'THY':'Vertical (axe parlé)',
+      'CRC':'Légère bascule sur les pics',
+      'VPV²':'Épais — son parlé, texte prioritaire',
+      'FPV':'Rétractés (intimité)',
+      'SAE':'Large à modéré (naturel)',
+      'Larynx':'Centré — pas de manipulation'
+    },
+    signature:'La chanson française (Brel, Piaf, Gainsbourg) = Speech avec micro travail de THY. L\'émotion vient du texte + débit, pas de la technique vocale affichée. Brel : Speech → petits Twang nasaux sur les mots-clés.',
+    tip:'Chante d\'abord le texte en speech ordinaire, sans modifier la voix. Quand tu sens l\'émotion monter, laisse le THY basculer légèrement → tu arrives naturellement à la chanson française.',
+    refs:['Édith Piaf','Jacques Brel','Serge Gainsbourg','Barbara','Stromae','Zaz']
+  },
+  {
+    id:'rock', name:'Rock', color:'#6B7280', icon:'🎸',
+    tagline:'Belt + ancrage laryngé maximum',
+    couplet:'speech', refrain:'belt',
+    anatomy:{
+      'THY':'Vertical (ancrage)',
+      'CRC':'Forte bascule Belt',
+      'VPV²':'Très épais — contact maximal',
+      'FPV':'Centrés (soutien)',
+      'SAE':'Étroit + compression supraglottique',
+      'Larynx':'Haut → très haut en intensité'
+    },
+    signature:'Rock = Belt poussé + compression supraglottique intentionnelle (grit/growl). La « distorsion vocale » rock n\'est pas un accident : c\'est une compression contrôlée des structures supra-glottiques sur un Belt stable.',
+    tip:'ATTENTION : le grit rock nécessite d\'abord un Belt solide et stable. Sans fondation Belt, la compression devient destructrice pour les cordes. Maîtrise le Belt 6 mois avant d\'expérimenter le grit.',
+    refs:['Robert Plant','Janis Joplin','Chris Cornell','Pat Benatar','Myles Kennedy']
+  }
+];
+
+var openId = null;
+var activeReg = {}; // genreId → 'couplet' | 'refrain'
+
+function renderGenres(){
+  var grid = document.getElementById('gd-grid');
+  if(!grid) return;
+  grid.innerHTML = GENRES.map(function(g){
+    activeReg[g.id] = 'couplet';
+    var qId = g.couplet;
+    var qName = QNAMES[qId] || qId;
+    var qCol = QCOLORS[qId] || '#aaa';
+    return '<div class="gd-card" id="gdc-'+g.id+'" onclick="window.toggleGenre(\''+g.id+'\')">'
+      +'<div class="gd-bar" style="background:'+g.color+'"></div>'
+      +'<div class="gd-front">'
+        +'<span class="gd-icon">'+g.icon+'</span>'
+        +'<div class="gd-name" style="color:'+g.color+'">'+g.name+'</div>'
+        +'<div class="gd-tagline">'+g.tagline+'</div>'
+        +'<div class="gd-regs">'
+          +'<span class="gd-reg" style="color:'+QCOLORS[g.couplet]+'">Couplet → '+QNAMES[g.couplet]+'</span>'
+          +'<span class="gd-reg" style="color:'+QCOLORS[g.refrain]+'">Refrain → '+QNAMES[g.refrain]+'</span>'
+        +'</div>'
+      +'</div>'
+      +'<div class="gd-detail" id="gdd-'+g.id+'">'
+        +'<div class="gd-detail-inner">'
+          +'<div class="gd-sub">Registre à visualiser</div>'
+          +'<div class="gd-toggle">'
+            +'<button class="gd-toggle-btn active" id="gdt-'+g.id+'-couplet" style="border-color:'+QCOLORS[g.couplet]+';color:'+QCOLORS[g.couplet]+'" onclick="event.stopPropagation();window.switchGdReg(\''+g.id+'\',\'couplet\')">Couplet — '+QNAMES[g.couplet]+'</button>'
+            +'<button class="gd-toggle-btn" id="gdt-'+g.id+'-refrain" onclick="event.stopPropagation();window.switchGdReg(\''+g.id+'\',\'refrain\')">Refrain — '+QNAMES[g.refrain]+'</button>'
+          +'</div>'
+          +'<div class="gd-sub">Carte anatomique</div>'
+          +'<div class="gd-recipe-mini">'+Object.keys(g.anatomy).map(function(k){
+              return '<span class="gd-recipe-pill"><b>'+k+'</b> '+g.anatomy[k]+'</span>';
+            }).join('')+'</div>'
+          +'<div class="gd-sub">Signature acoustique</div>'
+          +'<div class="gd-sig" style="border-color:'+g.color+'">'+g.signature+'</div>'
+          +'<div class="gd-sub">Conseil pédagogique</div>'
+          +'<div class="gd-tip">💡 '+g.tip+'</div>'
+          +'<div class="gd-sub">Références à écouter</div>'
+          +'<div class="gd-refs">'+g.refs.map(function(r){return '<span class="gd-ref-pill">'+r+'</span>';}).join('')+'</div>'
+          +'<button class="gd-3d-btn" style="background:'+g.color+'" onclick="event.stopPropagation();window.showGenreIn3D(\''+g.id+'\')" id="gd3d-'+g.id+'">Voir en 3D ↓ ('+qName+')</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+window.toggleGenre = function(id){
+  var card = document.getElementById('gdc-'+id);
+  var wasOpen = openId === id;
+  if(openId){
+    var prev = document.getElementById('gdc-'+openId);
+    if(prev) prev.classList.remove('open');
+  }
+  if(wasOpen){ openId=null; return; }
+  card.classList.add('open');
+  openId = id;
+};
+
+window.switchGdReg = function(id, reg){
+  var g = GENRES.find(function(x){return x.id===id;});
+  if(!g) return;
+  activeReg[id] = reg;
+  var qId = reg === 'couplet' ? g.couplet : g.refrain;
+  var qName = QNAMES[qId] || qId;
+  var qCol = QCOLORS[qId] || '#aaa';
+  // toggle buttons
+  ['couplet','refrain'].forEach(function(r){
+    var btn = document.getElementById('gdt-'+id+'-'+r);
+    if(!btn) return;
+    var rqId = r === 'couplet' ? g.couplet : g.refrain;
+    btn.className = 'gd-toggle-btn' + (r===reg?' active':'');
+    if(r===reg){ btn.style.borderColor=QCOLORS[rqId]; btn.style.color=QCOLORS[rqId]; }
+    else { btn.style.borderColor=''; btn.style.color=''; }
+  });
+  // update 3D button label
+  var btn3d = document.getElementById('gd3d-'+id);
+  if(btn3d) btn3d.textContent = 'Voir en 3D ↓ ('+qName+')';
+};
+
+window.showGenreIn3D = function(id){
+  var g = GENRES.find(function(x){return x.id===id;});
+  if(!g) return;
+  var reg = activeReg[id] || 'couplet';
+  var qId = reg === 'couplet' ? g.couplet : g.refrain;
+  if(window.selectLabQuality) window.selectLabQuality(qId);
+  var lab = document.getElementById('lab3d');
+  if(lab) lab.scrollIntoView({behavior:'smooth',block:'start'});
+};
+
+renderGenres();
+})();
+
+// ═══════════════════════════════════════════
+// LABO 3D — Three.js Larynx Interactif
+// ═══════════════════════════════════════════
+(function initLab3D(){
+  const canvas = document.getElementById('lab3d-canvas');
+  if(!canvas || !window.THREE) return;
+
+  // ─── RENDERER ───
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+  renderer.setClearColor(0x04080F, 1);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // ─── SCENE & CAMERA ───
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x04080F, 14, 24);
+  const camera = new THREE.PerspectiveCamera(42, 2, 0.1, 50);
+
+  // ─── LIGHTING ───
+  scene.add(new THREE.AmbientLight(0x8899CC, 6));
+  const dl1 = new THREE.DirectionalLight(0xBBCCFF, 8);
+  dl1.position.set(4, 7, 5); scene.add(dl1);
+  const dl2 = new THREE.DirectionalLight(0xAA88DD, 5);
+  dl2.position.set(-5, 2, -4); scene.add(dl2);
+  const dl3 = new THREE.DirectionalLight(0x6644AA, 3);
+  dl3.position.set(0, -6, 3); scene.add(dl3);
+
+  // ─── GRID ───
+  const grid = new THREE.GridHelper(8, 16, 0x223366, 0x0A1122);
+  grid.position.y = -3.2; scene.add(grid);
+
+  // ─── MATERIAL FACTORY ───
+  function M(hex, op) {
+    op = op===undefined ? 0.8 : op;
+    return new THREE.MeshPhongMaterial({color:hex, transparent:true, opacity:op, side:THREE.DoubleSide, shininess:80});
+  }
+
+  // ─── MAIN LARYNX GROUP (height animation) ───
+  const LG = new THREE.Group();
+  scene.add(LG);
+
+  // ─── THY (thyroid cartilage) ───
+  const thyG = new THREE.Group();
+  LG.add(thyG);
+  const thyMat = M(0xA855F7, 0.75);
+
+  // Left plate (thin box angled to form V shape)
+  const thyLGeo = new THREE.BoxGeometry(0.09, 1.7, 1.05);
+  const thyL = new THREE.Mesh(thyLGeo, thyMat);
+  thyL.rotation.y = -0.52;
+  thyL.position.set(-0.45, 0, 0.32);
+  thyG.add(thyL);
+  const thyR = new THREE.Mesh(thyLGeo, thyMat);
+  thyR.rotation.y = 0.52;
+  thyR.position.set(0.45, 0, 0.32);
+  thyG.add(thyR);
+
+  // Anterior commissure bar
+  const thyNotch = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.07, 0.07, 1.7, 7),
+    M(0xC084FC, 0.9)
+  );
+  thyNotch.position.set(0, 0, -0.08);
+  thyG.add(thyNotch);
+
+  // ─── CRC (cricoid cartilage) ───
+  const crcG = new THREE.Group();
+  crcG.position.y = -1.35;
+  LG.add(crcG);
+
+  crcG.add(new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.12, 8, 30), M(0x0EA5E9, 0.65)));
+  // Signet plate (thick posterior — Belt signature)
+  const signet = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.14), M(0x38BDF8, 0.8));
+  signet.position.set(0, 0, 0.83);
+  crcG.add(signet);
+
+  // ─── ARYTENOIDS ───
+  const aryGeo = new THREE.ConeGeometry(0.17, 0.42, 7);
+  const aryMat = M(0xFBBF24, 0.85);
+  const aryL = new THREE.Mesh(aryGeo, aryMat);
+  aryL.position.set(-0.3, -0.05, 0.72); LG.add(aryL);
+  const aryR = new THREE.Mesh(aryGeo, aryMat);
+  aryR.position.set(0.3, -0.05, 0.72); LG.add(aryR);
+
+  // ─── VPV (true vocal folds) ───
+  const vpvMat = M(0xF59E0B, 0.95);
+  const vpvLGeo = new THREE.BoxGeometry(0.85, 0.22, 0.28);
+  const vpvL = new THREE.Mesh(vpvLGeo, vpvMat);
+  vpvL.rotation.y = 0.33; vpvL.position.set(-0.33, -0.05, 0.32); LG.add(vpvL);
+  const vpvR = new THREE.Mesh(vpvLGeo, vpvMat);
+  vpvR.rotation.y = -0.33; vpvR.position.set(0.33, -0.05, 0.32); LG.add(vpvR);
+
+  // ─── FPV (false vocal folds) ───
+  const fpvMat = M(0x10B981, 0.75);
+  const fpvLGeo = new THREE.BoxGeometry(0.85, 0.15, 0.22);
+  const fpvL = new THREE.Mesh(fpvLGeo, fpvMat);
+  fpvL.rotation.y = 0.3; fpvL.position.set(-0.55, 0.38, 0.32); LG.add(fpvL);
+  const fpvR = new THREE.Mesh(fpvLGeo, fpvMat);
+  fpvR.rotation.y = -0.3; fpvR.position.set(0.55, 0.38, 0.32); LG.add(fpvR);
+
+  // ─── SAE (aryepiglottic sphincter) ───
+  const saeMat = M(0xEC4899, 0.55);
+  const saeBody = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 0.72, 0.8, 14, 1, true), saeMat);
+  saeBody.position.y = 1.15; LG.add(saeBody);
+  const saeRim = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.055, 6, 22), M(0xF472B6, 0.75));
+  saeRim.position.y = 1.55; LG.add(saeRim);
+
+  // ─── QUALITY TARGET STATES ───
+  const STATES = {
+    speech:     {thyTilt:0,     crcTilt:0,    vpvThick:1.0,  fpvX:0.55, saeScale:1.0,  laryY:0,    vpvHex:0xF59E0B},
+    falsetto:   {thyTilt:0,     crcTilt:0,    vpvThick:0.22, fpvX:0.55, saeScale:1.0,  laryY:0,    vpvHex:0x8B5CF6},
+    sob:        {thyTilt:-0.42, crcTilt:0,    vpvThick:0.30, fpvX:0.88, saeScale:1.0,  laryY:-1.2, vpvHex:0x22D3EE},
+    twang_nasal:{thyTilt:-0.35, crcTilt:0,    vpvThick:0.30, fpvX:0.88, saeScale:0.37, laryY:0.9,  vpvHex:0xFCD34D},
+    twang_oral: {thyTilt:-0.35, crcTilt:0,    vpvThick:0.30, fpvX:0.88, saeScale:0.37, laryY:0.9,  vpvHex:0xFB923C},
+    opera:      {thyTilt:-0.42, crcTilt:0,    vpvThick:0.38, fpvX:0.88, saeScale:0.40, laryY:-1.2, vpvHex:0xF87171},
+    belt:       {thyTilt:0,     crcTilt:0.44, vpvThick:1.0,  fpvX:0.88, saeScale:0.40, laryY:0.9,  vpvHex:0xFB923C},
+  };
+
+  // Live animated values (lerp sources)
+  var cur = {thyTilt:0, crcTilt:0, vpvThick:1.0, fpvX:0.55, saeScale:1.0, laryY:0};
+  var tgt = Object.assign({}, STATES.speech);
+  var vpvLerp = new THREE.Color(0xF59E0B);
+  var tgtVpvCol = new THREE.Color(0xF59E0B);
+
+  function selectQuality(id) {
+    if(!STATES[id]) return;
+    tgt = Object.assign({}, STATES[id]);
+    tgtVpvCol = new THREE.Color(tgt.vpvHex);
+    document.querySelectorAll('.lab-q-btn').forEach(function(b){b.classList.toggle('active', b.dataset.q===id);});
+    renderLabState(id);
+  }
+  window.selectLabQuality = selectQuality;
+
+  // ─── LERP + APPLY ───
+  function lerp(a, b, k){ return a + (b-a)*k; }
+
+  function applyState(dt) {
+    var k = 1 - Math.pow(0.005, dt);
+    cur.thyTilt  = lerp(cur.thyTilt,  tgt.thyTilt,  k);
+    cur.crcTilt  = lerp(cur.crcTilt,  tgt.crcTilt,  k);
+    cur.vpvThick = lerp(cur.vpvThick, tgt.vpvThick, k);
+    cur.fpvX     = lerp(cur.fpvX,     tgt.fpvX,     k);
+    cur.saeScale = lerp(cur.saeScale, tgt.saeScale, k);
+    cur.laryY    = lerp(cur.laryY,    tgt.laryY,    k);
+    vpvLerp.lerp(tgtVpvCol, k);
+
+    thyG.rotation.x  = cur.thyTilt;
+    crcG.rotation.x  = cur.crcTilt;
+    vpvL.scale.set(1, cur.vpvThick, cur.vpvThick);
+    vpvR.scale.set(1, cur.vpvThick, cur.vpvThick);
+    vpvMat.color.copy(vpvLerp);
+    fpvL.position.x  = -cur.fpvX;
+    fpvR.position.x  =  cur.fpvX;
+    saeBody.scale.set(cur.saeScale, 1, cur.saeScale);
+    saeRim.scale.set(cur.saeScale, 1, cur.saeScale);
+    LG.position.y    = cur.laryY * 0.25;
+  }
+
+  // ─── CAMERA ORBIT ───
+  var cTheta=0.3, cPhi=1.25, cR=6.0, tTheta=0.3, tPhi=1.25;
+  var drag=false, lx=0, ly=0, autoRot=true;
+
+  function updateCam(){
+    camera.position.set(
+      cR*Math.sin(cPhi)*Math.sin(cTheta),
+      cR*Math.cos(cPhi),
+      cR*Math.sin(cPhi)*Math.cos(cTheta)
+    );
+    camera.lookAt(0, 0.15, 0.3);
+  }
+
+  window.setLabView = function(v){
+    autoRot=false;
+    if(v==='top')      { tPhi=0.06;  tTheta=0; }
+    else if(v==='lat') { tPhi=Math.PI/2; tTheta=Math.PI/2; }
+    else               { tPhi=Math.PI/3.5; tTheta=0.4; }
+  };
+
+  canvas.addEventListener('mousedown',  function(e){drag=true;autoRot=false;lx=e.clientX;ly=e.clientY;});
+  canvas.addEventListener('touchstart', function(e){drag=true;autoRot=false;lx=e.touches[0].clientX;ly=e.touches[0].clientY;},{passive:true});
+  window.addEventListener('mouseup',    function(){drag=false;});
+  window.addEventListener('touchend',   function(){drag=false;});
+  canvas.addEventListener('mousemove',  function(e){
+    if(!drag)return;
+    tTheta+=(e.clientX-lx)*0.012;
+    tPhi=Math.max(0.06,Math.min(Math.PI-0.06,tPhi-(e.clientY-ly)*0.012));
+    lx=e.clientX; ly=e.clientY;
+  });
+  canvas.addEventListener('touchmove',  function(e){
+    if(!drag)return;
+    tTheta+=(e.touches[0].clientX-lx)*0.012;
+    tPhi=Math.max(0.06,Math.min(Math.PI-0.06,tPhi-(e.touches[0].clientY-ly)*0.012));
+    lx=e.touches[0].clientX; ly=e.touches[0].clientY;
+  },{passive:true});
+
+  // ─── RESIZE ───
+  function resize3D(){
+    var wrap=document.getElementById('lab3d-wrap');
+    if(!wrap)return;
+    var w=wrap.clientWidth;
+    var h=Math.round(Math.min(520,Math.max(300,w*0.55)));
+    renderer.setSize(w,h);
+    camera.aspect=w/h;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize3D);
+
+  // ─── STATE PANEL ───
+  var structLabels={thy:'THY (thyroïde)',crc:'CRC (cricoïde)',vpv2:'VPV² corps plis',fpv:'FPV faux plis',sae:'SAE sphincter',larynx:'Larynx hauteur'};
+  var structCols={thy:'#A855F7',crc:'#0EA5E9',vpv2:'#F59E0B',fpv:'#10B981',sae:'#EC4899',larynx:'#38BDF8'};
+  var expl={
+    'thy:Basculé':'CT activé — allonge les VPV',
+    'thy:Vertical':'TA actif ou équilibré',
+    'crc:Basculé':'↑ signature exclusive du Belt',
+    'crc:Vertical':'position neutre',
+    'vpv2:Épais':'masse max → puissance',
+    'vpv2:Fins':'CT seul → tessiture étendue',
+    'vpv2:Rigides':'TA+CT → léger aérien',
+    'vpv2:Fins ou Épais':'variable selon registre',
+    'fpv:Rétractés':'✓ espace glottique protégé',
+    'fpv:Centrés':'position neutre',
+    'sae:Étroit':'🔊 formant chanteur 2-4kHz',
+    'sae:Large':'spectre naturel ouvert',
+    'larynx:Bas':'conduit allongé → sombre',
+    'larynx:Centré':'couleur naturelle',
+    'larynx:Haut':'conduit raccourci → brillant',
+  };
+
+  function renderLabState(qid){
+    var q=L2.find(function(x){return x.id===qid;});
+    var panel=document.getElementById('lab3d-state');
+    if(!q||!panel)return;
+    var keys=['thy','crc','vpv2','fpv','sae','larynx'];
+    panel.innerHTML=keys.map(function(k){
+      var val=q.recipe[k]||'—';
+      var hint=expl[k+':'+val]||'';
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07)">'+
+        '<span style="width:8px;height:8px;border-radius:50%;background:'+structCols[k]+';flex-shrink:0"></span>'+
+        '<span style="font-size:11px;color:var(--dim);min-width:118px">'+structLabels[k]+'</span>'+
+        '<strong style="font-size:12px;color:'+q.color+'">'+val+'</strong>'+
+        '<span style="font-size:10px;color:rgba(255,255,255,0.22);margin-left:auto">'+hint+'</span>'+
+        '</div>';
+    }).join('');
+  }
+
+  // ─── QUALITY SELECTOR INIT ───
+  var qColors={speech:'#3B82F6',falsetto:'#8B5CF6',sob:'#06B6D4',twang_nasal:'#F59E0B',twang_oral:'#F97316',opera:'#EF4444',belt:'#EC4899'};
+  var qNames={speech:'Speech',falsetto:'Falsetto',sob:'Sob',twang_nasal:'Twang Nasal',twang_oral:'Twang Oral',opera:'Opéra',belt:'Belt'};
+
+  function initQualitySelector(){
+    var c=document.getElementById('lab-qs');
+    if(!c||c.children.length)return;
+    c.innerHTML=Object.keys(STATES).map(function(id){
+      return '<button class="lab-q-btn" data-q="'+id+'" onclick="selectLabQuality(\''+id+'\')" '+
+        'style="padding:9px 18px;border-radius:20px;border:2px solid '+qColors[id]+'33;background:'+qColors[id]+'18;'+
+        'color:'+qColors[id]+';font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.3px">'+
+        qNames[id]+'</button>';
+    }).join('');
+    selectQuality('speech');
+  }
+
+  // ─── ANIMATION LOOP ───
+  var clock = new THREE.Clock();
+  var frameId = null;
+  function loop(){
+    frameId = requestAnimationFrame(loop);
+    var dt = clock.getDelta();
+    if(autoRot) tTheta += dt*0.22;
+    cTheta += (tTheta-cTheta)*0.07;
+    cPhi   += (tPhi-cPhi)*0.07;
+    updateCam();
+    applyState(dt);
+    renderer.render(scene, camera);
+  }
+
+  // ─── INIT ───
+  initQualitySelector();
+  resize3D();
+  loop();
+
+})();
+</script>
+</body>
+</html>
