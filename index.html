@@ -1667,7 +1667,8 @@ renderGenres();
   function resize3D(){
     var wrap=document.getElementById('lab3d-wrap');
     if(!wrap)return;
-    var w=wrap.clientWidth;
+    var w=wrap.clientWidth||wrap.offsetWidth||Math.max(300,window.innerWidth-48);
+    if(w<10) w=Math.max(300,window.innerWidth-48); // fallback si layout pas encore calculé
     var h=Math.round(Math.min(520,Math.max(300,w*0.55)));
     renderer.setSize(w,h);
     camera.aspect=w/h;
@@ -1740,16 +1741,21 @@ renderGenres();
   // ─── ANIMATION LOOP ───
   var clock = new THREE.Clock();
   var frameId = null;
+  var loopErrShown = false;
   function loop(){
     frameId = requestAnimationFrame(loop);
-    var dt = clock.getDelta();
-    if(autoRot) tTheta += dt*0.22;
-    cTheta += (tTheta-cTheta)*0.07;
-    cPhi   += (tPhi-cPhi)*0.07;
-    updateCam();
-    applyState(dt);
-    renderer.render(scene, camera);
-    drawLabels();
+    try {
+      var dt = clock.getDelta();
+      if(autoRot) tTheta += dt*0.22;
+      cTheta += (tTheta-cTheta)*0.07;
+      cPhi   += (tPhi-cPhi)*0.07;
+      updateCam();
+      applyState(dt);
+      renderer.render(scene, camera);
+      drawLabels();
+    } catch(e) {
+      if(!loopErrShown){ loopErrShown=true; showErr('Erreur rendu 3D : '+(e&&e.message?e.message:'inconnue')); cancelAnimationFrame(frameId); }
+    }
   }
 
   // ─── INIT ───
@@ -1768,6 +1774,8 @@ renderGenres();
   }, {threshold:0.1});
   var section = document.getElementById('lab3d');
   if(section) obs.observe(section); else startOnce();
+  // Fallback : démarrer de toute façon après 3s si l'observer n'a pas tiré
+  setTimeout(function(){ startOnce(); }, 3000);
 
   } catch(e) { showErr((e && e.message) ? e.message : 'Erreur WebGL inconnue'); }
 })();
