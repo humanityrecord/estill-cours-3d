@@ -1263,6 +1263,7 @@ renderGenres();
   scene.fog = new THREE.Fog(0x04080F, 14, 24);
   const camera = new THREE.PerspectiveCamera(42, 2, 0.1, 50);
 
+
   // ─── LIGHTING ───
   scene.add(new THREE.AmbientLight(0x8899CC, 6));
   const dl1 = new THREE.DirectionalLight(0xBBCCFF, 8);
@@ -1286,135 +1287,210 @@ renderGenres();
   const LG = new THREE.Group();
   scene.add(LG);
 
-  // ─── THY (thyroid cartilage) ───
+  // ─── THY (thyroid cartilage) — bouclier en V, angle interne ~90°, ExtrudeGeometry ───
   const thyG = new THREE.Group();
   LG.add(thyG);
   const thyMat = M(0xA855F7, 0.75);
 
-  // Two lames in V — angle interne ~90° (adulte masculin)
-  const thyLGeo = new THREE.BoxGeometry(0.09, 1.7, 1.1);
-  const thyL = new THREE.Mesh(thyLGeo, thyMat);
-  thyL.rotation.y = -0.44;
-  thyL.position.set(-0.42, 0, 0.38);
+  // Contour d'une lame thyroïdienne extrudée (trapèze allongé, hauteur 1.8u ≈ 36mm)
+  function makeThyLame() {
+    var s = new THREE.Shape();
+    s.moveTo(0, -0.9);
+    s.lineTo(0,  0.9);
+    s.lineTo(1.05, 0.65);
+    s.lineTo(1.1, -0.75);
+    s.lineTo(0.3, -0.9);
+    s.closePath();
+    return new THREE.ExtrudeGeometry(s, {depth:0.09, bevelEnabled:false});
+  }
+  var thyLameGeo = makeThyLame();
+  var thyL = new THREE.Mesh(thyLameGeo, thyMat);
+  thyL.rotation.y = Math.PI/4;
+  thyL.position.set(-0.06, -0.9, -0.05);
   thyG.add(thyL);
-  const thyR = new THREE.Mesh(thyLGeo, thyMat);
-  thyR.rotation.y = 0.44;
-  thyR.position.set(0.42, 0, 0.38);
+  var thyR = new THREE.Mesh(thyLameGeo, thyMat);
+  thyR.scale.x = -1;
+  thyR.rotation.y = -Math.PI/4;
+  thyR.position.set(0.06, -0.9, -0.05);
   thyG.add(thyR);
 
-  // Anterior commissure bar
-  const thyNotch = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.07, 0.07, 1.7, 7),
-    M(0xC084FC, 0.9)
-  );
-  thyNotch.position.set(0, 0, -0.08);
-  thyG.add(thyNotch);
+  // Proéminence laryngée (pomme d'Adam)
+  var adamShape = new THREE.Shape();
+  adamShape.moveTo(-0.07, -0.55);
+  adamShape.lineTo(0, -0.85);
+  adamShape.lineTo(0, 0.62);
+  adamShape.lineTo(-0.07, 0.50);
+  adamShape.closePath();
+  var adamGeo = new THREE.ExtrudeGeometry(adamShape, {depth:0.14, bevelEnabled:true, bevelSize:0.03, bevelThickness:0.03, bevelSegments:2});
+  var adam = new THREE.Mesh(adamGeo, M(0xC084FC, 0.9));
+  adam.position.set(-0.07, -0.9, -0.19);
+  thyG.add(adam);
 
-  // ─── CRC (cricoid cartilage) ───
+  // ─── CRC (cricoid cartilage) — arc antérieur fin + lame postérieure haute ───
   const crcG = new THREE.Group();
   crcG.position.y = -1.35;
   LG.add(crcG);
 
-  crcG.add(new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.12, 8, 30), M(0x0EA5E9, 0.65)));
-  // Signet plate (thick posterior — Belt signature)
-  const signet = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.14), M(0x38BDF8, 0.8));
-  signet.position.set(0, 0, 0.83);
-  crcG.add(signet);
+  // Arc antérieur : 270° (s'ouvre vers l'arrière pour laisser place à la lame)
+  var arcAnt = new THREE.Mesh(
+    new THREE.TorusGeometry(0.88, 0.09, 8, 28, Math.PI * 1.5),
+    M(0x0EA5E9, 0.65)
+  );
+  arcAnt.rotation.y = Math.PI * 0.75;
+  crcG.add(arcAnt);
 
-  // ─── ARYTENOIDS ───
-  const aryGeo = new THREE.ConeGeometry(0.17, 0.42, 7);
-  const aryMat = M(0xFBBF24, 0.85);
-  const aryL = new THREE.Mesh(aryGeo, aryMat);
-  aryL.position.set(-0.3, -0.05, 0.72); LG.add(aryL);
-  const aryR = new THREE.Mesh(aryGeo, aryMat);
-  aryR.position.set(0.3, -0.05, 0.72); LG.add(aryR);
+  // Lame postérieure : haute (22mm → 1.1u), Shape + Extrude
+  var laminaShape = new THREE.Shape();
+  laminaShape.moveTo(-0.52, -0.22);
+  laminaShape.lineTo(-0.52,  0.88);
+  laminaShape.quadraticCurveTo(0, 1.08, 0.52, 0.88);
+  laminaShape.lineTo(0.52, -0.22);
+  laminaShape.quadraticCurveTo(0, -0.30, -0.52, -0.22);
+  laminaShape.closePath();
+  var laminaGeo = new THREE.ExtrudeGeometry(laminaShape, {depth:0.18, bevelEnabled:false});
+  var lamina = new THREE.Mesh(laminaGeo, M(0x38BDF8, 0.80));
+  lamina.rotation.x = -Math.PI/2;
+  lamina.position.set(-0.52, 0.22, 0.97);
+  crcG.add(lamina);
 
-  // ─── VPV (true vocal folds) — fusiformes ───
-  // Lèvres fusiformes : plus épaisses au milieu, effilées aux extrémités (commissure ant. → processus vocal aryt.)
-  // Cylindre tronconique rotationné sur X pour courir d'avant en arrière (axe Z)
+  // ─── ARYTÉNOÏDES — pyramides 3 faces + processus vocal spike ───
+  var aryMat = M(0xFBBF24, 0.85);
+  var pvSpkGeo = new THREE.ConeGeometry(0.04, 0.28, 4);
+
+  var aryLGrp = new THREE.Group();
+  var aryLBody = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.44, 3, 1), aryMat);
+  aryLBody.rotation.z = 0.12;
+  aryLGrp.add(aryLBody);
+  var pvSpkL = new THREE.Mesh(pvSpkGeo, M(0xFCD34D, 0.9));
+  pvSpkL.rotation.x = Math.PI/2;
+  pvSpkL.position.set(0.05, -0.10, -0.18);
+  aryLGrp.add(pvSpkL);
+  aryLGrp.position.set(-0.30, -0.04, 0.74);
+  LG.add(aryLGrp);
+
+  var aryRGrp = new THREE.Group();
+  var aryRBody = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.44, 3, 1), aryMat);
+  aryRBody.rotation.z = -0.12;
+  aryRGrp.add(aryRBody);
+  var pvSpkR = new THREE.Mesh(pvSpkGeo, M(0xFCD34D, 0.9));
+  pvSpkR.rotation.x = Math.PI/2;
+  pvSpkR.position.set(-0.05, -0.10, -0.18);
+  aryRGrp.add(pvSpkR);
+  aryRGrp.position.set(0.30, -0.04, 0.74);
+  LG.add(aryRGrp);
+
+  // ─── VPV (plis vocaux vrais) — TubeGeometry fusiforme sur CatmullRomCurve3 ───
   const vpvMat = M(0xF59E0B, 0.95);
-  const vpvFusoGeo = new THREE.CylinderGeometry(0.065, 0.10, 0.82, 10);
-  const vpvL = new THREE.Mesh(vpvFusoGeo, vpvMat);
-  vpvL.rotation.x = Math.PI/2;  // axe → Z (antéro-postérieur)
-  vpvL.position.set(-0.12, -0.05, 0.35); LG.add(vpvL);
-  const vpvR = new THREE.Mesh(vpvFusoGeo, vpvMat);
-  vpvR.rotation.x = Math.PI/2;
-  vpvR.position.set(0.12, -0.05, 0.35); LG.add(vpvR);
 
-  // ─── FPV (faux plis — bandes ventriculaires) ───
-  // Plus larges et plus plats que les VPV, au-dessus d'eux, séparés par les ventricules de Morgagni
+  function makeVpvTube(sideX) {
+    var pts = [
+      new THREE.Vector3(0,           -0.05, -0.06),
+      new THREE.Vector3(sideX*0.06,  -0.05,  0.20),
+      new THREE.Vector3(sideX*0.10,  -0.05,  0.40),
+      new THREE.Vector3(sideX*0.11,  -0.05,  0.58),
+      new THREE.Vector3(sideX*0.10,  -0.05,  0.70),
+    ];
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.065, 7, false);
+  }
+
+  var vpvL = new THREE.Mesh(makeVpvTube(-1), vpvMat);
+  LG.add(vpvL);
+  var vpvR = new THREE.Mesh(makeVpvTube( 1), vpvMat);
+  LG.add(vpvR);
+
+  // ─── FPV (faux plis / bandes ventriculaires) — TubeGeometry, radius plus large, Y+0.35 ───
   const fpvMat = M(0x10B981, 0.75);
-  const fpvFusoGeo = new THREE.CylinderGeometry(0.075, 0.10, 0.78, 10);
-  const fpvL = new THREE.Mesh(fpvFusoGeo, fpvMat);
-  fpvL.rotation.x = Math.PI/2;
-  fpvL.position.set(-0.55, 0.40, 0.35); LG.add(fpvL);
-  const fpvR = new THREE.Mesh(fpvFusoGeo, fpvMat);
-  fpvR.rotation.x = Math.PI/2;
-  fpvR.position.set(0.55, 0.40, 0.35); LG.add(fpvR);
 
-  // ─── SAE (aryepiglottic sphincter) ───
+  function makeFpvTube(sideX, xOff) {
+    var pts = [
+      new THREE.Vector3(0,               0.35, -0.04),
+      new THREE.Vector3(sideX*xOff*0.5,  0.38,  0.20),
+      new THREE.Vector3(sideX*xOff,      0.38,  0.40),
+      new THREE.Vector3(sideX*xOff*0.9,  0.36,  0.60),
+      new THREE.Vector3(sideX*xOff*0.7,  0.34,  0.72),
+    ];
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 14, 0.078, 7, false);
+  }
+
+  // Groupes pour permettre translation X animée
+  var fpvLGrp = new THREE.Group();
+  fpvLGrp.add(new THREE.Mesh(makeFpvTube(-1, 0.55), fpvMat));
+  LG.add(fpvLGrp);
+  var fpvRGrp = new THREE.Group();
+  fpvRGrp.add(new THREE.Mesh(makeFpvTube( 1, 0.55), fpvMat));
+  LG.add(fpvRGrp);
+  // Alias pour applyState (compatible avec l'API position.x)
+  var fpvL = fpvLGrp;
+  var fpvR = fpvRGrp;
+
+  // ─── SAE (sphincter ary-épiglottique) — LatheGeometry entonnoir ───
   const saeMat = M(0xEC4899, 0.55);
-  const saeBody = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 0.72, 0.8, 14, 1, true), saeMat);
-  saeBody.position.y = 1.15; LG.add(saeBody);
-  const saeRim = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.055, 6, 22), M(0xF472B6, 0.75));
-  saeRim.position.y = 1.55; LG.add(saeRim);
+  var saePoints = [
+    new THREE.Vector2(0.72, 0.00),
+    new THREE.Vector2(0.82, 0.20),
+    new THREE.Vector2(0.92, 0.40),
+    new THREE.Vector2(1.00, 0.60),
+    new THREE.Vector2(1.05, 0.80),
+  ];
+  var saeBody = new THREE.Mesh(
+    new THREE.LatheGeometry(saePoints, 16, 0, Math.PI * 2),
+    saeMat
+  );
+  saeBody.position.y = 0.75;
+  LG.add(saeBody);
+  var saeRim = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.055, 6, 22), M(0xF472B6, 0.75));
+  saeRim.position.y = 1.55;
+  LG.add(saeRim);
 
-  // ─── ÉPIGLOTTE ───
-  // Feuille cartilagineuse, base fixée à l'angle interne THY, apex vers l'arrière et le haut
+  // ─── ÉPIGLOTTE — Shape pétale oblong + ExtrudeGeometry (depth 0.06) ───
   const epiMat = M(0xF97316, 0.65);
-  const epiBody = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.55, 0.25, 0.08, 8),
-    epiMat
-  );
-  epiBody.position.set(0, 1.75, 0.25);
-  epiBody.rotation.x = -0.6; // incliné vers l'arrière
+  var epiShape = new THREE.Shape();
+  epiShape.moveTo(0, -0.55);
+  epiShape.quadraticCurveTo(-0.42, -0.20, -0.52, 0.25);
+  epiShape.quadraticCurveTo(-0.38, 0.72,   0.00,  0.80);
+  epiShape.quadraticCurveTo( 0.38, 0.72,   0.52,  0.25);
+  epiShape.quadraticCurveTo( 0.42, -0.20,  0.00, -0.55);
+  epiShape.closePath();
+  var epiGeo = new THREE.ExtrudeGeometry(epiShape, {depth:0.06, bevelEnabled:true, bevelSize:0.02, bevelThickness:0.02, bevelSegments:2});
+  var epiBody = new THREE.Mesh(epiGeo, epiMat);
+  epiBody.position.set(-0.03, 1.20, 0.08);
+  epiBody.rotation.x = -0.62;
+  epiBody.rotation.z =  0.05;
   LG.add(epiBody);
-  // Tige de l'épiglotte fixée au THY
-  const epiStem = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.04, 0.04, 0.55, 6),
-    M(0xFB923C, 0.5)
-  );
-  epiStem.position.set(0, 1.38, -0.05);
-  epiStem.rotation.x = 0.4;
-  LG.add(epiStem);
 
-  // ─── OS HYOÏDE ───
-  // U horizontal, seul os sans articulation directe — ancrage supérieur
+  // ─── OS HYOÏDE — TorusGeometry ~270°, fixe (hors LG) ───
   const hyoMat = M(0x6EE7B7, 0.55);
-  const hyoArc = new THREE.Mesh(
-    new THREE.TorusGeometry(0.62, 0.06, 8, 24, Math.PI * 1.4),
+  var hyoArc = new THREE.Mesh(
+    new THREE.TorusGeometry(0.62, 0.07, 8, 26, Math.PI * 1.5),
     hyoMat
   );
   hyoArc.position.set(0, 2.45, -0.05);
-  hyoArc.rotation.y = Math.PI * 0.8;
-  scene.add(hyoArc); // attaché à la scène, pas au LG (os fixe, larynx monte/descend dessous)
+  hyoArc.rotation.y = Math.PI * 0.75;
+  scene.add(hyoArc);
 
-  // ─── TRACHÉE (anneaux cartilagineux) ───
+  // ─── TRACHÉE — 4 anneaux TorusGeometry, fixe ───
   const trachMat = M(0x38BDF8, 0.30);
-  for(var ti=0; ti<3; ti++){
-    var tr = new THREE.Mesh(new THREE.TorusGeometry(0.70, 0.055, 6, 24), trachMat);
-    tr.position.y = -1.35 - 0.6 - ti*0.38;
-    scene.add(tr); // fixe (pas dans LG)
+  for(var ti=0; ti<4; ti++){
+    var tr = new THREE.Mesh(new THREE.TorusGeometry(0.70, 0.055, 7, 26), trachMat);
+    tr.position.y = -1.35 - 0.55 - ti*0.36;
+    scene.add(tr);
   }
 
-  // ─── LANGUE (corpus — corps de la langue) ───
-  // Grande masse musculaire au-dessus du larynx, animée haute/centrée
+  // ─── LANGUE — masse musculaire, fixe ───
   const langMat = M(0xF472B6, 0.30);
   const langMesh = new THREE.Mesh(new THREE.SphereGeometry(0.68, 12, 8), langMat);
   langMesh.scale.set(1.4, 0.6, 1.5);
   langMesh.position.set(0, 2.9, 0.35);
   scene.add(langMesh);
 
-  // ─── VOILE DU PALAIS ───
-  // Clapet musculaire qui s'abaisse (centré → ouverture nasale) ou monte (haut → bloque nasale)
-  // Différenciateur unique Twang Nasal (centré) vs Twang Oral (haut)
+  // ─── VOILE DU PALAIS — clapet partiel ───
   const voileMat = M(0xFDA4AF, 0.45);
   const voileMesh = new THREE.Mesh(
     new THREE.CylinderGeometry(0.55, 0.48, 0.12, 12, 1, false, 0, Math.PI * 1.7),
     voileMat
   );
   voileMesh.position.set(0, 3.25, 0.15);
-  voileMesh.rotation.x = -0.25; // position haut (fermé) par défaut
+  voileMesh.rotation.x = -0.25;
   scene.add(voileMesh);
 
   // ─── QUALITY TARGET STATES ───
@@ -1467,14 +1543,16 @@ renderGenres();
 
     thyG.rotation.x  = cur.thyTilt;
     crcG.rotation.x  = cur.crcTilt;
-    // VPV: écartement médial (adduction/abduction) + épaisseur corps+couverture
-    vpvL.position.x  = -0.12 - cur.fpvX * 0.04; // glissent légèrement à l'ouverture FPV
-    vpvR.position.x  =  0.12 + cur.fpvX * 0.04;
+    // VPV: épaisseur (scale XZ) + léger décalage médial à l'ouverture FPV
     vpvL.scale.set(cur.vpvThick, 1, cur.vpvThick);
     vpvR.scale.set(cur.vpvThick, 1, cur.vpvThick);
+    // Adduction/abduction : décalage X sur le mesh (tube part de x≈0, courbe s'écarte naturellement)
+    vpvL.position.x  = -(cur.fpvX - 0.55) * 0.06;
+    vpvR.position.x  =  (cur.fpvX - 0.55) * 0.06;
     vpvMat.color.copy(vpvLerp);
-    fpvL.position.x  = -cur.fpvX;
-    fpvR.position.x  =  cur.fpvX;
+    // FPV : rétractés = groupe décalé latéralement, centrés = position neutre
+    fpvL.position.x  = -(cur.fpvX - 0.55) * 0.9;
+    fpvR.position.x  =  (cur.fpvX - 0.55) * 0.9;
     saeBody.scale.set(cur.saeScale, 1, cur.saeScale);
     saeRim.scale.set(cur.saeScale, 1, cur.saeScale);
     LG.position.y    = cur.laryY * 0.25;
