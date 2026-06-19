@@ -200,6 +200,7 @@ footer strong{color:var(--txt)}
   <button class="nav-btn" onclick="scrollSection('level1')">Niveau 1</button>
   <button class="nav-btn" onclick="scrollSection('anatomie')">Anatomie</button>
   <button class="nav-btn" onclick="scrollSection('lab3d')">Labo 3D</button>
+  <button class="nav-btn" onclick="scrollSection('lab-svg')">SVG Anat.</button>
   <button class="nav-btn" onclick="scrollSection('genre-decoder')">Genres</button>
   <button class="nav-btn" onclick="scrollSection('level2')">Niveau 2</button>
   <span id="prog-label">0/25 complété</span>
@@ -1764,5 +1765,456 @@ renderGenres();
 
 })();
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION LAB-SVG — Coupe sagittale SVG animée du larynx
+     Style : illustration anatomique (Titze/Kayes), fond sombre
+     ═══════════════════════════════════════════════════════════════ -->
+<section id="lab-svg" style="position:relative;z-index:1;padding:80px 24px 100px;background:rgba(4,8,18,0.6);border-top:1px solid rgba(255,255,255,0.09);border-bottom:1px solid rgba(255,255,255,0.09)">
+
+<style>
+#lab-svg .lsvg-badge{display:inline-block;padding:5px 16px;border-radius:20px;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);font-size:11px;letter-spacing:2px;color:#A855F7;margin-bottom:14px;text-transform:uppercase;font-weight:700}
+#lab-svg .lsvg-header{text-align:center;margin-bottom:40px}
+#lab-svg .lsvg-header h2{font-size:clamp(22px,3.5vw,36px);font-weight:800;letter-spacing:-0.5px;margin-bottom:8px;color:#E8EEFF}
+#lab-svg .lsvg-header p{color:#7B90C4;font-size:14px;max-width:500px;margin:0 auto}
+#lab-svg .lsvg-q-bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:32px}
+#lab-svg .lsvg-q-btn{padding:8px 18px;border-radius:20px;border:2px solid transparent;font-size:12px;font-weight:700;cursor:pointer;transition:all .25s ease;letter-spacing:.3px;opacity:.6}
+#lab-svg .lsvg-q-btn:hover{opacity:.85;transform:translateY(-1px)}
+#lab-svg .lsvg-q-btn.active{opacity:1;transform:translateY(-1px);filter:brightness(1.1)}
+#lab-svg .lsvg-body{display:flex;gap:24px;max-width:940px;margin:0 auto;align-items:flex-start}
+#lab-svg .lsvg-svg-wrap{flex:0 0 auto;width:min(380px,100%);position:relative}
+#lab-svg .lsvg-svg-wrap svg{width:100%;height:auto;display:block}
+#lab-svg .lsvg-panel{flex:1;min-width:190px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:14px;padding:20px}
+#lab-svg .lsvg-panel-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#7B90C4;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+#lab-svg .lsvg-dot{width:8px;height:8px;border-radius:50%;display:inline-block;transition:background .4s}
+#lab-svg .lsvg-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px}
+#lab-svg .lsvg-row:last-of-type{border-bottom:none}
+#lab-svg .lsvg-rlabel{color:#7B90C4;font-weight:600;min-width:68px;font-size:11px}
+#lab-svg .lsvg-rval{font-weight:700;font-size:10px;padding:3px 10px;border-radius:10px;transition:all .4s ease;text-transform:uppercase;letter-spacing:.5px}
+#lab-svg .lv-neutre{background:rgba(123,144,196,.15);color:#7B90C4}
+#lab-svg .lv-actif{background:rgba(245,158,11,.18);color:#F59E0B}
+#lab-svg .lv-haut{background:rgba(239,68,68,.15);color:#F87171}
+#lab-svg .lv-bas{background:rgba(6,182,212,.15);color:#22D3EE}
+#lab-svg .lv-etroit{background:rgba(249,115,22,.18);color:#FB923C}
+#lab-svg .lv-large{background:rgba(16,185,129,.15);color:#34D399}
+#lab-svg .lv-bascule{background:rgba(168,85,247,.2);color:#C084FC}
+#lab-svg .lv-retractes{background:rgba(16,185,129,.15);color:#34D399}
+#lab-svg .lv-centres{background:rgba(123,144,196,.15);color:#A0AEC0}
+#lab-svg .lv-nasal{background:rgba(250,204,21,.18);color:#FCD34D}
+#lab-svg .lsvg-acou{margin-top:14px;padding:10px 12px;border-radius:8px;background:rgba(255,255,255,.04);border-left:2px solid rgba(255,255,255,.1);font-size:11px;color:#7B90C4;line-height:1.55;transition:border-color .4s}
+@media(max-width:640px){#lab-svg .lsvg-body{flex-direction:column}#lab-svg .lsvg-svg-wrap{width:100%}}
+</style>
+
+<div class="lsvg-header">
+  <div class="lsvg-badge">Labo SVG · Anatomie</div>
+  <h2>Coupe Sagittale du Larynx</h2>
+  <p>Vue de profil, gauche. Sélectionne une qualité vocale pour animer les structures.</p>
+</div>
+
+<div class="lsvg-q-bar" id="lsvg-q-bar"></div>
+
+<div class="lsvg-body">
+
+  <div class="lsvg-svg-wrap">
+    <svg viewBox="0 0 290 620" xmlns="http://www.w3.org/2000/svg" id="lsvg-main" role="img" aria-label="Coupe sagittale du larynx Estill">
+      <title>Coupe sagittale du larynx — Estill Voice Training</title>
+      <defs>
+        <pattern id="lsvg-hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="5" stroke="rgba(255,255,255,0.06)" stroke-width="1.2"/>
+        </pattern>
+        <pattern id="lsvg-trach-dots" width="6" height="6" patternUnits="userSpaceOnUse">
+          <circle cx="3" cy="3" r="0.9" fill="rgba(125,211,252,0.14)"/>
+        </pattern>
+      </defs>
+
+      <!-- BLOC LARYNX entier — translateY pour hauteur larynx -->
+      <g id="lsvg-lary-block" style="transition:transform .7s cubic-bezier(.4,0,.2,1)">
+
+        <line x1="144" y1="230" x2="144" y2="600" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="5 8"/>
+
+        <!-- ══ TRACHÉE ══ -->
+        <g id="lsvg-trachee">
+          <path d="M 110 542 Q 107 562 107 590" stroke="#7DD3FC" stroke-width="1.8" fill="none" opacity="0.52"/>
+          <path d="M 178 542 Q 181 562 181 590" stroke="#7DD3FC" stroke-width="1.8" fill="none" opacity="0.52"/>
+          <rect x="107" y="548" width="74" height="42" fill="url(#lsvg-trach-dots)" opacity="0.65"/>
+          <path d="M 107 552 Q 144 547 181 552" stroke="#7DD3FC" stroke-width="1.6" fill="none" opacity="0.48" stroke-dasharray="5 3"/>
+          <path d="M 107 565 Q 144 560 181 565" stroke="#7DD3FC" stroke-width="1.3" fill="none" opacity="0.34" stroke-dasharray="5 3"/>
+          <path d="M 107 578 Q 144 574 181 578" stroke="#7DD3FC" stroke-width="1.1" fill="none" opacity="0.22" stroke-dasharray="5 3"/>
+          <line x1="107" y1="562" x2="62" y2="562" stroke="rgba(125,211,252,0.36)" stroke-width="0.9"/>
+          <text x="59" y="559" fill="#7DD3FC" font-size="9.5" text-anchor="end" font-family="'Segoe UI',system-ui,sans-serif" opacity="0.82">Trachée</text>
+        </g>
+
+        <!-- ══ CARTILAGE THYROÏDE (THY) ══
+             Bouclier V, deux lames, pivot CT en bas-antérieur
+        ══ -->
+        <g id="lsvg-thy" style="transition:transform .7s cubic-bezier(.4,0,.2,1)">
+          <!-- Lame gauche (silhouette sagittale) -->
+          <path d="M 162 516 L 162 415 Q 161 399 155 388 Q 149 378 144 374 L 122 405 Q 112 425 110 457 L 109 516 Z"
+                fill="rgba(168,85,247,0.13)" stroke="#A855F7" stroke-width="2" opacity="0.93"/>
+          <!-- Proéminence laryngée -->
+          <path d="M 155 388 Q 161 377 155 368 Q 149 360 144 374" fill="rgba(168,85,247,0.22)" stroke="#A855F7" stroke-width="1.6"/>
+          <!-- Incisure thyroïdienne -->
+          <path d="M 122 405 Q 132 391 144 374" stroke="#A855F7" stroke-width="1.2" fill="none" opacity="0.42"/>
+          <!-- Cornes supérieures -->
+          <line x1="162" y1="418" x2="165" y2="386" stroke="#A855F7" stroke-width="1.3" opacity="0.52"/>
+          <line x1="122" y1="410" x2="118" y2="380" stroke="#A855F7" stroke-width="1.3" opacity="0.52"/>
+          <!-- Petites cornes / pivot CT -->
+          <circle cx="162" cy="516" r="3.5" fill="#A855F7" opacity="0.78"/>
+          <circle cx="109" cy="516" r="3.5" fill="#A855F7" opacity="0.78"/>
+          <!-- Labels -->
+          <line x1="162" y1="454" x2="208" y2="454" stroke="rgba(168,85,247,0.36)" stroke-width="0.9"/>
+          <text x="211" y="451" fill="#A855F7" font-size="9.5" font-weight="700" font-family="'Segoe UI',system-ui,sans-serif">THY</text>
+          <text x="211" y="462" fill="#A855F7" font-size="8" font-family="'Segoe UI',system-ui,sans-serif" opacity="0.68">thyroïde</text>
+        </g>
+
+        <!-- ══ CARTILAGE CRICOÏDE (CRC) ══
+             Anneau sigillaire — arc fin AV, lame large POST
+        ══ -->
+        <g id="lsvg-crc" style="transition:transform .7s cubic-bezier(.4,0,.2,1)">
+          <!-- Arc antérieur (mince) -->
+          <path d="M 112 526 Q 111 538 112 548 Q 128 556 144 556 Q 160 556 176 548 Q 177 538 176 526"
+                fill="rgba(14,165,233,0.1)" stroke="#0EA5E9" stroke-width="2.2"/>
+          <!-- Lame postérieure gauche (large, haute) -->
+          <path d="M 112 526 Q 103 504 103 492 Q 103 476 112 473 Q 124 468 134 469 L 134 526 Z"
+                fill="rgba(14,165,233,0.17)" stroke="#0EA5E9" stroke-width="1.6"/>
+          <!-- Lame postérieure droite -->
+          <path d="M 176 526 Q 185 504 185 492 Q 185 476 176 473 Q 164 468 154 469 L 154 526 Z"
+                fill="rgba(14,165,233,0.1)" stroke="#0EA5E9" stroke-width="1.6"/>
+          <!-- Ligne d'articulation aryténoïdes -->
+          <path d="M 112 473 Q 144 468 176 473" stroke="#0EA5E9" stroke-width="1" fill="none" opacity="0.48" stroke-dasharray="3 2"/>
+          <!-- Labels -->
+          <line x1="112" y1="536" x2="62" y2="536" stroke="rgba(14,165,233,0.36)" stroke-width="0.9"/>
+          <text x="59" y="533" fill="#0EA5E9" font-size="9.5" font-weight="700" text-anchor="end" font-family="'Segoe UI',system-ui,sans-serif">CRC</text>
+          <text x="59" y="544" fill="#0EA5E9" font-size="8" text-anchor="end" font-family="'Segoe UI',system-ui,sans-serif" opacity="0.68">cricoïde</text>
+        </g>
+
+        <!-- ══ ARYTÉNOÏDES ══
+             Pyramides postérieures sur lame CRC
+             Contrôlent le plan des VPV (horizontal/élevé)
+        ══ -->
+        <g id="lsvg-aryt" style="transition:transform .6s ease">
+          <path d="M 152 471 L 145 452 L 168 452 Q 172 458 171 468 Q 170 476 163 478 Z"
+                fill="rgba(251,191,36,0.22)" stroke="#FBBF24" stroke-width="1.7"/>
+          <path d="M 157 471 L 150 453 L 172 453 Q 176 459 175 469 Q 174 476 167 478 Z"
+                fill="rgba(251,191,36,0.07)" stroke="#FBBF24" stroke-width="1" opacity="0.42" stroke-dasharray="2 2"/>
+          <!-- Processus vocal → commissure antérieure VPV -->
+          <line x1="145" y1="464" x2="116" y2="466" stroke="#FBBF24" stroke-width="1.3" opacity="0.62" stroke-dasharray="2.5 1.5"/>
+          <circle cx="158" cy="472" r="2.2" fill="rgba(251,191,36,0.5)" stroke="#FBBF24" stroke-width="0.8"/>
+          <!-- Labels -->
+          <line x1="172" y1="460" x2="208" y2="447" stroke="rgba(251,191,36,0.36)" stroke-width="0.9"/>
+          <text x="211" y="445" fill="#FBBF24" font-size="9.5" font-weight="700" font-family="'Segoe UI',system-ui,sans-serif">ARY</text>
+          <text x="211" y="456" fill="#FBBF24" font-size="8" font-family="'Segoe UI',system-ui,sans-serif" opacity="0.68">aryténoïdes</text>
+        </g>
+
+        <!-- ══ VPV — VRAIS PLIS VOCAUX ══
+             Fusiformes, commissure ant → aryténoïdes
+             Épais (Speech/Belt) ↔ fins (Falsetto/Sob/Twang/Opera)
+        ══ -->
+        <g id="lsvg-vpv">
+          <ellipse id="lsvg-vpv-el" cx="132" cy="466" rx="28" ry="6.5"
+                   fill="rgba(245,158,11,0.28)" stroke="#F59E0B" stroke-width="2.2"
+                   style="transition:rx .62s ease,ry .65s ease,fill .5s ease,stroke .5s ease,stroke-width .5s ease"/>
+          <circle cx="104" cy="466" r="3" fill="#F59E0B" opacity="0.85"/>
+          <circle cx="160" cy="466" r="2.2" fill="#F59E0B" opacity="0.58"/>
+          <!-- 2e pli (glotte — ombre) -->
+          <ellipse cx="132" cy="476" rx="28" ry="2.8" fill="none"
+                   stroke="rgba(245,158,11,0.16)" stroke-width="1.2" stroke-dasharray="3 3"/>
+          <!-- Labels -->
+          <line x1="104" y1="466" x2="62" y2="452" stroke="rgba(245,158,11,0.36)" stroke-width="0.9"/>
+          <text x="59" y="450" fill="#F59E0B" font-size="9.5" font-weight="700" text-anchor="end" font-family="'Segoe UI',system-ui,sans-serif">VPV</text>
+          <text x="59" y="460" fill="#F59E0B" font-size="8" text-anchor="end" font-family="'Segoe UI',system-ui,sans-serif" opacity="0.68">plis vocaux</text>
+        </g>
+
+        <!-- ══ VENTRICULE DE MORGAGNI ══ -->
+        <g id="lsvg-vent">
+          <rect x="104" y="444" width="60" height="16" rx="3"
+                fill="url(#lsvg-hatch)" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <line x1="164" y1="452" x2="208" y2="435" stroke="rgba(255,255,255,0.17)" stroke-width="0.8"/>
+          <text x="211" y="433" fill="rgba(255,255,255,0.4)" font-size="8" font-family="'Segoe UI',system-ui,sans-serif">Ventricule</text>
+          <text x="211" y="443" fill="rgba(255,255,255,0.28)" font-size="7.5" font-family="'Segoe UI',system-ui,sans-serif">de Morgagni</text>
+        </g>
+
+        <!-- ══ FPV — FAUX PLIS VOCAUX ══
+             Plus larges que VPV, niveau latéral
+             Rétractés = condition sine qua non du chant sain
+        ══ -->
+        <g id="lsvg-fpv">
+          <path id="lsvg-fpv-el" d="M 100 436 Q 119 428 140 426 Q 161 428 170 436 Q 168 444 140 444 Q 112 444 100 436 Z"
+                fill="rgba(236,72,153,0.15)" stroke="#EC4899" stroke-width="1.7"
+                style="transition:d .65s ease,fill .5s ease,opacity .5s ease"/>
+          <!-- Labels -->
+          <line x1="100" y1="436" x2="62" y2="422" stroke="rgba(236,72,153,0.36)" stroke-width="0.9"/>
+          <text x="59" y="420" fill="#EC4899" font-size="9.5" font-weight="700" text-anchor="end" font-family="'Segoe UI',system-ui,sans-serif">FPV</text>
+          <text x="59" y="430" fill="#EC4899" font-size="8" text-anchor="end" font-family="'Segoe UI',system-ui,sans-serif" opacity="0.68">faux plis</text>
+        </g>
+
+        <!-- ══ SAE — SPHINCTER ARY-ÉPIGLOTTIQUE ══
+             Zone annulaire entre épiglotte et aryténoïdes
+             Étroit → formant épilaryngé 2–4 kHz
+        ══ -->
+        <g id="lsvg-sae">
+          <path id="lsvg-sae-el" d="M 91 394 Q 91 378 103 370 Q 118 362 144 360 Q 170 362 185 370 Q 197 378 197 394 Q 197 406 185 412 Q 170 418 144 419 Q 118 418 103 412 Q 91 406 91 394 Z"
+                fill="rgba(236,72,153,0.08)" stroke="#EC4899" stroke-width="1.9" stroke-dasharray="5 3.5"
+                style="transition:d .65s ease,stroke .5s ease,stroke-width .5s ease,fill .5s ease"/>
+          <line x1="91" y1="394" x2="197" y2="394" stroke="rgba(236,72,153,0.16)" stroke-width="0.8" stroke-dasharray="2 3"/>
+          <!-- Labels -->
+          <line x1="197" y1="388" x2="208" y2="375" stroke="rgba(236,72,153,0.36)" stroke-width="0.9"/>
+          <text x="211" y="373" fill="#EC4899" font-size="9.5" font-weight="700" font-family="'Segoe UI',system-ui,sans-serif">SAE</text>
+          <text x="211" y="384" fill="#EC4899" font-size="8" font-family="'Segoe UI',system-ui,sans-serif" opacity="0.68">épilarynx</text>
+        </g>
+
+        <!-- ══ ÉPIGLOTTE ══
+             Feuille cartilagineux, base fixée à l'angle interne THY
+             Paroi antérieure du tube SAE
+        ══ -->
+        <g id="lsvg-epig">
+          <!-- Corps (feuille en vue sagittale gauche) -->
+          <path id="lsvg-epig-el" d="M 151 392 Q 149 378 145 363 Q 141 348 140 334 Q 139 320 144 309 Q 150 302 153 309 Q 156 321 152 337 Q 148 353 150 371 Q 152 380 155 392 Z"
+                fill="rgba(249,115,22,0.2)" stroke="#F97316" stroke-width="1.9"/>
+          <!-- Pétiole (fixation au THY) -->
+          <line x1="151" y1="392" x2="151" y2="403" stroke="#F97316" stroke-width="2.2" opacity="0.58"/>
+          <!-- Nervure centrale (détail) -->
+          <line x1="146" y1="342" x2="146" y2="389" stroke="rgba(249,115,22,0.22)" stroke-width="0.8" stroke-dasharray="2 2"/>
+          <!-- Labels -->
+          <line x1="140" y1="322" x2="62" y2="308" stroke="rgba(249,115,22,0.36)" stroke-width="0.9"/>
+          <text x="59" y="306" fill="#F97316" font-size="9.5" font-weight="700" text-anchor="end" font-family="'Segoe UI',system-ui,sans-serif">Épiglotte</text>
+        </g>
+
+        <!-- ══ OS HYOÏDE ══ -->
+        <g id="lsvg-hyoide">
+          <path d="M 120 296 Q 144 290 168 296 Q 168 306 144 308 Q 120 306 120 296 Z"
+                fill="rgba(110,231,183,0.15)" stroke="#6EE7B7" stroke-width="2.2"/>
+          <!-- Petite corne -->
+          <path d="M 120 296 Q 113 288 110 278 Q 113 274 118 276 Q 122 283 122 292"
+                fill="rgba(110,231,183,0.1)" stroke="#6EE7B7" stroke-width="1.6"/>
+          <!-- Grande corne -->
+          <path d="M 168 298 Q 182 296 192 300 Q 196 306 192 311 Q 182 314 168 308"
+                fill="rgba(110,231,183,0.1)" stroke="#6EE7B7" stroke-width="1.6"/>
+          <!-- Labels -->
+          <line x1="120" y1="300" x2="62" y2="288" stroke="rgba(110,231,183,0.36)" stroke-width="0.9"/>
+          <text x="59" y="286" fill="#6EE7B7" font-size="9.5" font-weight="700" text-anchor="end" font-family="'Segoe UI',system-ui,sans-serif">Os hyoïde</text>
+        </g>
+
+        <!-- ══ VOILE DU PALAIS ══
+             Haut (oral pur) ↔ centré (nasalisé — Twang Nasal)
+        ══ -->
+        <g id="lsvg-voile">
+          <path id="lsvg-voile-el" d="M 96 252 Q 132 244 168 252 Q 178 262 173 272 Q 158 279 144 278 Q 130 279 115 272 Q 110 262 96 252 Z"
+                fill="rgba(250,204,21,0.1)" stroke="#FCD34D" stroke-width="1.6" opacity="0.72"
+                style="transition:d .65s ease,fill .5s ease,opacity .5s ease"/>
+          <path id="lsvg-luette-el" d="M 142 278 Q 144 286 142 291" stroke="#FCD34D" stroke-width="1.6" fill="none" opacity="0.58"/>
+          <!-- Labels -->
+          <line x1="168" y1="260" x2="208" y2="249" stroke="rgba(250,204,21,0.33)" stroke-width="0.9"/>
+          <text x="211" y="247" fill="#FCD34D" font-size="9.5" font-weight="700" font-family="'Segoe UI',system-ui,sans-serif">Voile</text>
+          <text x="211" y="258" fill="#FCD34D" font-size="8" font-family="'Segoe UI',system-ui,sans-serif" opacity="0.68">du palais</text>
+        </g>
+
+        <!-- ══ LANGUE ══ -->
+        <g id="lsvg-langue">
+          <path id="lsvg-langue-el" d="M 81 264 Q 87 276 100 282 Q 118 288 144 286 Q 160 284 164 278 Q 168 267 160 259 Q 144 252 118 254 Q 96 256 81 264 Z"
+                fill="rgba(220,38,38,0.1)" stroke="rgba(220,38,38,0.4)" stroke-width="1.3"
+                style="transition:d .65s ease"/>
+        </g>
+
+        <!-- ══ LÉGENDE (en bas du SVG, coin bas-gauche) ══ -->
+        <g transform="translate(5,522)">
+          <rect x="0" y="0" width="96" height="72" rx="6" fill="rgba(4,8,18,0.76)" stroke="rgba(255,255,255,0.07)" stroke-width="0.8"/>
+          <text x="48" y="11" fill="rgba(255,255,255,0.32)" font-size="7" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" letter-spacing="0.8">STRUCTURES</text>
+          <circle cx="9" cy="22" r="2.4" fill="#6EE7B7"/>
+          <text x="15" y="25.5" fill="#6EE7B7" font-size="7.5" font-family="'Segoe UI',system-ui,sans-serif">Hyoïde</text>
+          <circle cx="9" cy="33" r="2.4" fill="#F97316"/>
+          <text x="15" y="36.5" fill="#F97316" font-size="7.5" font-family="'Segoe UI',system-ui,sans-serif">Épiglotte</text>
+          <circle cx="9" cy="44" r="2.4" fill="#EC4899"/>
+          <text x="15" y="47.5" fill="#EC4899" font-size="7.5" font-family="'Segoe UI',system-ui,sans-serif">SAE / FPV</text>
+          <circle cx="9" cy="55" r="2.4" fill="#F59E0B"/>
+          <text x="15" y="58.5" fill="#F59E0B" font-size="7.5" font-family="'Segoe UI',system-ui,sans-serif">VPV · plis vrais</text>
+          <circle cx="52" cy="22" r="2.4" fill="#FBBF24"/>
+          <text x="58" y="25.5" fill="#FBBF24" font-size="7.5" font-family="'Segoe UI',system-ui,sans-serif">Aryténoïdes</text>
+          <circle cx="52" cy="33" r="2.4" fill="#0EA5E9"/>
+          <text x="58" y="36.5" fill="#0EA5E9" font-size="7.5" font-family="'Segoe UI',system-ui,sans-serif">Cricoïde</text>
+          <circle cx="52" cy="44" r="2.4" fill="#A855F7"/>
+          <text x="58" y="47.5" fill="#A855F7" font-size="7.5" font-family="'Segoe UI',system-ui,sans-serif">Thyroïde</text>
+          <circle cx="52" cy="55" r="2.4" fill="#7DD3FC"/>
+          <text x="58" y="58.5" fill="#7DD3FC" font-size="7.5" font-family="'Segoe UI',system-ui,sans-serif">Trachée</text>
+          <text x="48" y="68" fill="rgba(255,255,255,0.18)" font-size="6.5" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-style="italic">Estill Voice Training®</text>
+        </g>
+
+      </g><!-- fin lsvg-lary-block -->
+    </svg>
+  </div><!-- fin lsvg-svg-wrap -->
+
+  <!-- ══ PANNEAU D'ÉTAT ══ -->
+  <div class="lsvg-panel">
+    <div class="lsvg-panel-title">
+      <span class="lsvg-dot" id="lsvg-dot"></span>
+      <span id="lsvg-q-name" style="color:#7B90C4">— sélectionner</span>
+    </div>
+    <div class="lsvg-row"><span class="lsvg-rlabel">THY</span><span class="lsvg-rval lv-neutre" id="lsvg-sv-thy">—</span></div>
+    <div class="lsvg-row"><span class="lsvg-rlabel">CRC</span><span class="lsvg-rval lv-neutre" id="lsvg-sv-crc">—</span></div>
+    <div class="lsvg-row"><span class="lsvg-rlabel">VPV</span><span class="lsvg-rval lv-neutre" id="lsvg-sv-vpv">—</span></div>
+    <div class="lsvg-row"><span class="lsvg-rlabel">FPV</span><span class="lsvg-rval lv-neutre" id="lsvg-sv-fpv">—</span></div>
+    <div class="lsvg-row"><span class="lsvg-rlabel">SAE</span><span class="lsvg-rval lv-neutre" id="lsvg-sv-sae">—</span></div>
+    <div class="lsvg-row"><span class="lsvg-rlabel">Larynx</span><span class="lsvg-rval lv-neutre" id="lsvg-sv-lary">—</span></div>
+    <div class="lsvg-row"><span class="lsvg-rlabel">Voile</span><span class="lsvg-rval lv-neutre" id="lsvg-sv-voile">—</span></div>
+    <div class="lsvg-row"><span class="lsvg-rlabel">Langue</span><span class="lsvg-rval lv-neutre" id="lsvg-sv-langue">—</span></div>
+    <div class="lsvg-acou" id="lsvg-acou">Sélectionne une qualité vocale pour voir la recette anatomique et l'animation du larynx.</div>
+  </div>
+
+</div><!-- fin lsvg-body -->
+</section>
+<!-- ─── FIN SECTION LAB-SVG ─── -->
+
+<script>
+(function(){
+'use strict';
+
+var LSVG = {
+  speech:{label:'Speech',color:'#3B82F6',thyTilt:0,crcTilt:0,vpvThick:'épais',fpv:'centrés',sae:'large',laryY:0,voile:'haut',langue:'centrée',acoustic:'Pente spectrale négative — harmoniques décroissent avec la fréquence. Phase fermée longue, débit moyen.',key:'Seule qualité avec FPV <strong>centrés</strong> — toutes les qualités chantées ont FPV rétractés.'},
+  falsetto:{label:'Falsetto',color:'#8B5CF6',thyTilt:0,crcTilt:0,vpvThick:'fins',fpv:'rétractés',sae:'large',laryY:0,voile:'haut',langue:'centrée',acoustic:'Pente très forte après 1 kHz + bruit interharmonique (turbulence de souffle). Phase fermée quasi-inexistante.',key:'VPV <strong>fins</strong> = couverture seule vibre, corps passif. Plan élevé (aryténoïdes relevés).'},
+  sob:{label:'Sob',color:'#06B6D4',thyTilt:-1,crcTilt:0,vpvThick:'fins',fpv:'rétractés',sae:'large',laryY:-1,voile:'haut',langue:'haute',acoustic:'Très peu de partiels aigus. Conduit vocal le plus long (~17.45 cm). Son sombre, distancié.',key:'Larynx <strong>bas</strong> + THY basculé + ancrage fort — conduit vocal maximal, qualité la plus reposante.'},
+  twang_nasal:{label:'Twang Nasal',color:'#F59E0B',thyTilt:-0.8,crcTilt:0,vpvThick:'fins',fpv:'rétractés',sae:'étroit',laryY:1,voile:'centré',langue:'haute',acoustic:'Forte énergie 2–4 kHz (formant épilaryngé). Voile centré = nasalisation partielle.',key:'SAE <strong>étroit</strong> + Voile <strong>centré</strong> — seule qualité nasalisée de la recette Estill.'},
+  twang_oral:{label:'Twang Oral',color:'#F97316',thyTilt:-0.8,crcTilt:0,vpvThick:'fins',fpv:'rétractés',sae:'étroit',laryY:1,voile:'haut',langue:'haute',acoustic:'Plus brillant que Twang Nasal — nasalisation éliminée, énergie aigus maximale. Formant épilaryngé dominant.',key:'Identique au Twang Nasal sauf voile <strong>haut</strong> — résonance orale pure.'},
+  opera:{label:'Opéra',color:'#EF4444',thyTilt:-1,crcTilt:0,vpvThick:'fins',fpv:'rétractés',sae:'étroit',laryY:-1,voile:'haut',langue:'haute',acoustic:'Peaks à 0.5–1 kHz ET 3–4 kHz (Singer\'s Formant / squillo) + harmoniques en vagues (vibrato naturel).',key:'Larynx <strong>bas</strong> + SAE <strong>étroit</strong> = combinaison Sob+Twang. Forces opposées → vibrato.'},
+  belt:{label:'Belt',color:'#EC4899',thyTilt:0,crcTilt:1,vpvThick:'épais',fpv:'rétractés',sae:'étroit',laryY:1,voile:'haut',langue:'haute',acoustic:'Grande amplitude harmoniques aigus sur tout le spectre. Phase fermée ≥ 70% du cycle. Son le plus fort.',key:'Seule qualité avec CRC <strong>basculé</strong> + VPV <strong>épais</strong> + THY vertical. Larynx haut — cri primal.'}
+};
+
+var CLS = {'épais':'lv-actif','fins':'lv-neutre','centrés':'lv-centres','rétractés':'lv-retractes','large':'lv-large','étroit':'lv-etroit','haut':'lv-haut','bas':'lv-bas','centré':'lv-nasal','centrée':'lv-neutre','haute':'lv-haut','basculé':'lv-bascule','vertical':'lv-neutre'};
+
+function initBtns(){
+  var bar=document.getElementById('lsvg-q-bar');
+  if(!bar||bar.children.length) return;
+  Object.keys(LSVG).forEach(function(id){
+    var q=LSVG[id];
+    var b=document.createElement('button');
+    b.className='lsvg-q-btn';
+    b.setAttribute('data-lq',id);
+    b.textContent=q.label;
+    b.style.color=q.color;
+    b.style.borderColor=q.color+'55';
+    b.style.background=q.color+'18';
+    b.onclick=function(){sel(id);};
+    bar.appendChild(b);
+  });
+}
+
+function sel(id){
+  if(!LSVG[id]) return;
+  var q=LSVG[id];
+  document.querySelectorAll('.lsvg-q-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-lq')===id);});
+  anim(q);
+  panel(id,q);
+}
+
+function anim(q){
+  // Larynx Y
+  var block=document.getElementById('lsvg-lary-block');
+  if(block) block.style.transform='translateY('+(q.laryY*(-25))+'px)';
+
+  // THY tilt — pivot articulation CT (petites cornes ~130px,516px)
+  var gThy=document.getElementById('lsvg-thy');
+  if(gThy){
+    gThy.style.transform='rotate('+(q.thyTilt*(-12))+'deg)';
+    gThy.style.transformOrigin='130px 516px';
+    gThy.style.transition='transform .7s cubic-bezier(.4,0,.2,1)';
+  }
+
+  // CRC tilt — Belt: arc bascule vers avant (CW)
+  var gCrc=document.getElementById('lsvg-crc');
+  if(gCrc){
+    gCrc.style.transform='rotate('+(q.crcTilt*7)+'deg)';
+    gCrc.style.transformOrigin='144px 513px';
+    gCrc.style.transition='transform .7s cubic-bezier(.4,0,.2,1)';
+  }
+
+  // VPV épaisseur
+  var vpv=document.getElementById('lsvg-vpv-el');
+  if(vpv){
+    var thick=q.vpvThick==='épais';
+    vpv.setAttribute('ry',thick?9:4);
+    vpv.style.fill=thick?'rgba(245,158,11,0.38)':'rgba(245,158,11,0.13)';
+    vpv.style.stroke=thick?'#F59E0B':'#C084FC';
+    vpv.style.strokeWidth=thick?'2.6':'1.8';
+  }
+
+  // FPV position
+  var fpv=document.getElementById('lsvg-fpv-el');
+  if(fpv){
+    if(q.fpv==='rétractés'){
+      fpv.setAttribute('d','M 93 436 Q 112 424 140 422 Q 168 424 177 436 Q 174 446 140 447 Q 106 446 93 436 Z');
+      fpv.style.fill='rgba(236,72,153,0.06)';
+      fpv.style.opacity='0.62';
+    } else {
+      fpv.setAttribute('d','M 100 436 Q 119 428 140 426 Q 161 428 170 436 Q 168 444 140 444 Q 112 444 100 436 Z');
+      fpv.style.fill='rgba(236,72,153,0.18)';
+      fpv.style.opacity='1';
+    }
+  }
+
+  // SAE largeur
+  var sae=document.getElementById('lsvg-sae-el');
+  if(sae){
+    if(q.sae==='étroit'){
+      sae.setAttribute('d','M 108 394 Q 108 380 117 372 Q 128 364 144 362 Q 160 364 171 372 Q 180 380 180 394 Q 180 404 171 410 Q 160 416 144 416 Q 128 416 117 410 Q 108 404 108 394 Z');
+      sae.style.stroke='#F97316';
+      sae.style.strokeWidth='2.4';
+      sae.style.fill='rgba(249,115,22,0.11)';
+    } else {
+      sae.setAttribute('d','M 91 394 Q 91 378 103 370 Q 118 362 144 360 Q 170 362 185 370 Q 197 378 197 394 Q 197 406 185 412 Q 170 418 144 419 Q 118 418 103 412 Q 91 406 91 394 Z');
+      sae.style.stroke='#EC4899';
+      sae.style.strokeWidth='1.9';
+      sae.style.fill='rgba(236,72,153,0.08)';
+    }
+  }
+
+  // Voile
+  var voile=document.getElementById('lsvg-voile-el');
+  if(voile){
+    if(q.voile==='centré'){
+      voile.setAttribute('d','M 96 258 Q 132 252 168 258 Q 176 268 171 279 Q 156 286 144 286 Q 132 286 117 279 Q 112 268 96 258 Z');
+      voile.style.fill='rgba(250,204,21,0.32)';
+      voile.style.opacity='1';
+    } else {
+      voile.setAttribute('d','M 96 252 Q 132 244 168 252 Q 178 262 173 272 Q 158 279 144 278 Q 130 279 115 272 Q 110 262 96 252 Z');
+      voile.style.fill='rgba(250,204,21,0.1)';
+      voile.style.opacity='0.72';
+    }
+  }
+}
+
+function setV(id,txt){
+  var el=document.getElementById(id);
+  if(!el) return;
+  el.textContent=txt;
+  el.className='lsvg-rval '+(CLS[txt]||'lv-neutre');
+}
+
+function panel(id,q){
+  var dot=document.getElementById('lsvg-dot');
+  var nm=document.getElementById('lsvg-q-name');
+  var ac=document.getElementById('lsvg-acou');
+  if(dot) dot.style.background=q.color;
+  if(nm){nm.textContent=q.label;nm.style.color=q.color;}
+  setV('lsvg-sv-thy',  q.thyTilt<-0.5?'basculé':'vertical');
+  setV('lsvg-sv-crc',  q.crcTilt>0.5?'basculé':'vertical');
+  setV('lsvg-sv-vpv',  q.vpvThick);
+  setV('lsvg-sv-fpv',  q.fpv);
+  setV('lsvg-sv-sae',  q.sae);
+  setV('lsvg-sv-lary', q.laryY<-0.5?'bas':q.laryY>0.5?'haut':'centré');
+  setV('lsvg-sv-voile',q.voile);
+  setV('lsvg-sv-langue',q.langue);
+  if(ac){
+    ac.style.borderLeftColor=q.color;
+    ac.innerHTML='<strong style="color:'+q.color+';font-size:10px;display:block;margin-bottom:4px;letter-spacing:.5px;text-transform:uppercase">Acoustique</strong>'
+      +'<span style="color:rgba(232,238,255,.78)">'+q.acoustic+'</span>'
+      +'<em style="color:'+q.color+';font-size:10.5px;display:block;margin-top:7px;font-style:normal">⟡ '+q.key+'</em>';
+  }
+}
+
+initBtns();
+setTimeout(function(){sel('speech');},160);
+
+})();
+</script>
+
 </body>
 </html>
